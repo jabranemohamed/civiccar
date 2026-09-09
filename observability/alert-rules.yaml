@@ -1,0 +1,36 @@
+# Règles d'alerte locales de démonstration. Aucun envoi vers un destinataire réel :
+# pas d'Alertmanager configuré, les alertes sont visibles dans Prometheus/Grafana.
+groups:
+  - name: civiccare-demo
+    rules:
+      - alert: HausseErreursHttp
+        expr: sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hausse du taux d'erreurs HTTP 5xx"
+
+      - alert: LatenceElevee
+        expr: histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latence p95 des requêtes HTTP supérieure à 2 s"
+
+      - alert: BacklogOutboxDurable
+        expr: civiccare_outbox_backlog > 20
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backlog d'e-mails en attente durablement élevé (SMTP en panne ?)"
+
+      - alert: EchecsNotifications
+        expr: sum(rate(civiccare_notifications_deliveries_total{civiccare_result="failed"}[15m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Des notifications passent en échec définitif"

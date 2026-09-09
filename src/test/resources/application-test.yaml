@@ -1,0 +1,16 @@
+civiccare:
+  demo:
+    seed-enabled: false
+
+vaadin:
+  launch-browser: false
+
+civiccare-media:
+  storage-dir: ${java.io.tmpdir}/civiccare-test-media
+
+# Bootstrap de comptes pour les tests de permissions
+ADMIN_BOOTSTRAP_PASSWORD: test-admin-pass-123
+MODERATOR_BOOTSTRAP_PASSWORD: test-mod-pass-123
+AGENT_BOOTSTRAP_PASSWORD: test-agent-pass-123
+
+civiccare-outbox-poll-disabled: true

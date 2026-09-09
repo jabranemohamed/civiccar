@@ -1,0 +1,151 @@
+/* CivicCare Tunis — thème clair, service public contemporain.
+   Fond ivoire, bleu profond, accent terre cuite. Propriétés CSS logiques (compatibles RTL). */
+
+html {
+  --lumo-base-color: #ffffff;
+  --lumo-contrast-5pct: #f1ede6;
+  --lumo-contrast-10pct: #e6e0d6;
+  --lumo-primary-color: #155e75;
+  --lumo-primary-color-50pct: rgba(21, 94, 117, 0.5);
+  --lumo-primary-color-10pct: rgba(21, 94, 117, 0.1);
+  --lumo-primary-text-color: #155e75;
+  --lumo-primary-contrast-color: #ffffff;
+  --lumo-body-text-color: #172b3a;
+  --lumo-header-text-color: #172b3a;
+  --lumo-secondary-text-color: #4a5b68;
+  --lumo-tertiary-text-color: #6b7a86;
+  --lumo-error-color: #b3261e;
+  --lumo-error-text-color: #a2211a;
+  --lumo-success-color: #1b7a4b;
+  --lumo-success-text-color: #166341;
+  --lumo-border-radius-s: 8px;
+  --lumo-border-radius-m: 12px;
+  --lumo-border-radius-l: 16px;
+  --lumo-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', 'Noto Sans', 'Noto Sans Arabic', 'Noto Kufi Arabic', Tahoma, Arial, sans-serif;
+  --lumo-box-shadow-s: 0 1px 3px rgba(23, 43, 58, 0.08);
+  --lumo-box-shadow-m: 0 2px 8px rgba(23, 43, 58, 0.1);
+  /* Accent terre cuite disponible pour les composants applicatifs */
+  --civiccare-accent: #b45336;
+  --civiccare-surface: #ffffff;
+  --civiccare-app-background: #faf8f4;
+}
+
+body {
+  background: var(--civiccare-app-background);
+  color: var(--lumo-body-text-color);
+}
+
+/* Cibles tactiles d'au moins 44px (choix ergonomique) */
+vaadin-button {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+vaadin-button[theme~='primary'] {
+  font-weight: 600;
+}
+
+/* Focus visible renforcé */
+:focus-visible {
+  outline: 2px solid var(--lumo-primary-color);
+  outline-offset: 2px;
+}
+
+/* En-tête applicatif */
+.app-header {
+  background: var(--civiccare-surface);
+  border-block-end: 1px solid var(--lumo-contrast-10pct);
+  padding-block: var(--lumo-space-s);
+  padding-inline: var(--lumo-space-m);
+}
+
+.app-header .app-title {
+  font-size: var(--lumo-font-size-l);
+  font-weight: 700;
+  color: var(--lumo-primary-color);
+  margin: 0;
+}
+
+/* Bandeau urgences */
+.emergency-banner {
+  background: #fdf3ee;
+  border: 1px solid #ecd4c8;
+  border-radius: var(--lumo-border-radius-m);
+  color: #7a3a24;
+  padding-block: var(--lumo-space-xs);
+  padding-inline: var(--lumo-space-m);
+  font-size: var(--lumo-font-size-s);
+}
+
+/* Cartes de résultat */
+.report-card {
+  background: var(--civiccare-surface);
+  border: 1px solid var(--lumo-contrast-10pct);
+  border-radius: var(--lumo-border-radius-m);
+  box-shadow: var(--lumo-box-shadow-s);
+  padding: var(--lumo-space-m);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.report-card:hover,
+.report-card:focus-visible {
+  box-shadow: var(--lumo-box-shadow-m);
+  border-color: var(--lumo-primary-color-50pct);
+}
+
+.report-card[data-selected='true'] {
+  border-color: var(--lumo-primary-color);
+  box-shadow: 0 0 0 1px var(--lumo-primary-color);
+}
+
+/* Badges de statut : icône + texte, jamais la couleur seule */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-radius: 999px;
+  padding-block: 2px;
+  padding-inline: 10px;
+  font-size: var(--lumo-font-size-xs);
+  font-weight: 600;
+}
+
+.status-badge.status-open { background: #e8f1f5; color: #155e75; }
+.status-badge.status-in_progress { background: #fdf0e0; color: #8a5a13; }
+.status-badge.status-done_or_ordered { background: #e7f4ec; color: #166341; }
+.status-badge.status-out_of_scope { background: #efeae3; color: #5c554a; }
+.status-badge.status-pending_review { background: #efeae3; color: #5c554a; }
+
+/* Frise chronologique */
+.timeline-entry {
+  border-inline-start: 3px solid var(--lumo-primary-color-10pct);
+  padding-inline-start: var(--lumo-space-m);
+  padding-block: var(--lumo-space-xs);
+  margin-inline-start: var(--lumo-space-s);
+}
+
+.timeline-entry .timeline-date {
+  color: var(--lumo-tertiary-text-color);
+  font-size: var(--lumo-font-size-xs);
+}
+
+/* Panneau latéral d'exploration */
+.explore-panel {
+  inline-size: 400px;
+  max-inline-size: 100%;
+  background: var(--civiccare-app-background);
+  overflow: auto;
+}
+
+@media (max-width: 767px) {
+  .explore-panel {
+    inline-size: 100%;
+  }
+}
+
+/* Le conteneur cartographique n'est jamais inversé en RTL : carte géographique. */
+.map-container {
+  direction: ltr;
+}

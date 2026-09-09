@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
+scrape_configs:
+  # Métriques applicatives exposées par le collector OTel (source unique, pas de doublon Actuator)
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:9464"]

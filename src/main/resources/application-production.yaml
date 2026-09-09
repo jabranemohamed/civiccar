@@ -1,0 +1,13 @@
+civiccare:
+  demo:
+    seed-enabled: false
+
+vaadin:
+  production-mode: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+        http-only: true

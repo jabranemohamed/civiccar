@@ -1,0 +1,25 @@
+# Build
+target/
+node_modules/
+
+# Fichiers front générés par Vaadin (recréés au build)
+package.json
+package-lock.json
+tsconfig.json
+types.d.ts
+vite.config.ts
+vite.generated.ts
+src/main/frontend/generated/
+src/main/frontend/index.html
+src/main/bundles/
+
+# Environnement local
+.env
+data/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store

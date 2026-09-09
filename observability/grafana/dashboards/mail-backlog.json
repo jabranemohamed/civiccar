@@ -1,0 +1,100 @@
+{
+ "uid": "cc-mail",
+ "title": "CivicCare \u2014 E-mails et backlog",
+ "schemaVersion": 39,
+ "version": 1,
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "refresh": "30s",
+ "panels": [
+  {
+   "id": 1,
+   "title": "Backlog outbox",
+   "type": "stat",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "expr": "civiccare_outbox_backlog",
+     "refId": "A",
+     "legendFormat": null
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 2,
+   "title": "Livraisons par r\u00e9sultat",
+   "type": "timeseries",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(civiccare_notifications_deliveries_total[15m])) by (civiccare_result)",
+     "refId": "A",
+     "legendFormat": null
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 3,
+   "title": "\u00c9checs m\u00e9dia",
+   "type": "timeseries",
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 24,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(civiccare_media_failures_total[1h])) by (civiccare_result)",
+     "refId": "A",
+     "legendFormat": null
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   }
+  }
+ ],
+ "tags": [
+  "civiccare"
+ ]
+}

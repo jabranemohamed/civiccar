@@ -1,0 +1,89 @@
+spring:
+  application:
+    name: civiccare-tunis
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/civiccare}
+    username: ${DB_USER:civiccare}
+    password: ${DB_PASSWORD:civiccare}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+  servlet:
+    multipart:
+      max-file-size: 12MB
+      max-request-size: 40MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+
+vaadin:
+  launch-browser: false
+  allowed-packages: tn.civiccare
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+civiccare:
+  # Nom public affiché (en-tête, connexion). La ville/le pays cible reste configurable.
+  app-name: ${APP_NAME:CivicCare Tunis}
+  timezone: ${APP_TIMEZONE:Africa/Tunis}
+  # Pays cible (ISO 3166-1 alpha-2) : géocodage et région téléphonique par défaut.
+  country-code: ${APP_COUNTRY:TN}
+  phone-default-region: ${APP_PHONE_REGION:${APP_COUNTRY:TN}}
+  duplicate-radius-meters: ${APP_DUPLICATE_RADIUS:50}
+  archive-after-days: ${APP_ARCHIVE_DAYS:30}
+  purge-after-days: ${APP_PURGE_DAYS:90}
+  max-photos-per-report: 3
+  max-photo-bytes: 10485760
+  geo:
+    # DEMO : polygone de démonstration autour de Tunis, explicitement non officiel.
+    boundary-source: ${GEO_BOUNDARY_SOURCE:DEMO}
+    boundary-validated: ${GEO_BOUNDARY_VALIDATED:false}
+    # DEMO : géocodeur local déterministe sans réseau. NOMINATIM : instance auto-hébergée/fournisseur autorisé.
+    geocoder-mode: ${GEOCODER_MODE:DEMO}
+    geocoder-base-url: ${GEOCODER_BASE_URL:}
+    geocoder-email: ${GEOCODER_EMAIL:}
+  map:
+    tile-url: ${MAP_TILE_URL:https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+    tile-attribution: ${MAP_TILE_ATTRIBUTION:© OpenStreetMap contributors (ODbL)}
+    # Cadrage initial de la carte : Tunis par défaut, configurable pour une autre ville
+    center-lat: ${MAP_CENTER_LAT:36.8065}
+    center-lon: ${MAP_CENTER_LON:10.1815}
+    initial-zoom: ${MAP_INITIAL_ZOOM:12.5}
+  emergency:
+    # Aucun numéro affiché tant que verified=false : consigne générique uniquement.
+    verified: ${EMERGENCY_VERIFIED:false}
+    source: ${EMERGENCY_SOURCE:}
+    verified-on: ${EMERGENCY_VERIFIED_ON:}
+    numbers: []
+  demo:
+    seed-enabled: ${DEMO_SEED:false}
+  open311:
+    jurisdiction-id: tunis
+    max-date-range-days: 90
+    page-size: 200
+
+civiccare-media:
+  storage-dir: ${MEDIA_DIR:./data/media}
+
+logging:
+  level:
+    org.atmosphere: warn

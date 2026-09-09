@@ -1,0 +1,128 @@
+name: civiccare-tunis
+
+services:
+  db:
+    # PostgreSQL 18 + PostGIS 3.6. Image multi-arch (amd64 + arm64) :
+    # postgis/postgis:18-3.6 ne publie pas d'arm64 à la date de construction.
+    image: imresamu/postgis:18-3.6
+    environment:
+      POSTGRES_DB: civiccare
+      POSTGRES_USER: civiccare
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-civiccare}
+    ports:
+      # Port hôte 55432 pour éviter les conflits avec un PostgreSQL local éventuel
+      - "${DB_HOST_PORT:-55432}:5432"
+    volumes:
+      # PostgreSQL 18 : données sous /var/lib/postgresql (nouveau layout 18+)
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U civiccare -d civiccare"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mailpit:
+    image: axllent/mailpit:v1.31.1
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # UI web
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/civiccare
+      DB_USER: civiccare
+      DB_PASSWORD: ${DB_PASSWORD:-civiccare}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SPRING_PROFILES_ACTIVE: ${APP_PROFILES:-demo}
+      DEMO_SEED: ${DEMO_SEED:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+      AGENT_BOOTSTRAP_PASSWORD: ${AGENT_BOOTSTRAP_PASSWORD:-}
+      MODERATOR_BOOTSTRAP_PASSWORD: ${MODERATOR_BOOTSTRAP_PASSWORD:-}
+    ports:
+      - "${APP_HOST_PORT:-8080}:8080"
+    volumes:
+      - media-data:/app/data/media
+    healthcheck:
+      # L'image JRE n'embarque ni wget ni curl : sonde en bash pur (/dev/tcp)
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q 200"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+
+  # ===== Profil observability =====
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.160.0
+    profiles: ["observability"]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - tempo
+      - loki
+
+  tempo:
+    image: grafana/tempo:3.0.3
+    profiles: ["observability"]
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+
+  loki:
+    image: grafana/loki:3.7.7
+    profiles: ["observability"]
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    profiles: ["observability"]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert-rules.yaml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:13.2.1
+    profiles: ["observability"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana-demo}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+volumes:
+  db-data:
+  media-data:
+  tempo-data:
+  loki-data:
+  prometheus-data:
