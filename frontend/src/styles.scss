@@ -1,0 +1,193 @@
+// CivicCare Tunis — thème Material Design 3 (Angular Material 21)
+// Direction visuelle « clean » : fond bleu-gris très clair, surfaces blanches arrondies
+// sans bordures, ombres douces, chips pastel, sidebar blanche. Identité CivicCare
+// conservée (primaire #155E75, tertiaire terre cuite #B45336).
+@use '@angular/material' as mat;
+@use './theme/theme-colors' as cc;
+
+// Polices auto-hébergées : Inter (latin) + Noto Sans Arabic (arabe)
+@use '@fontsource-variable/inter';
+@use '@fontsource/noto-sans-arabic/400.css' as noto-400;
+@use '@fontsource/noto-sans-arabic/500.css' as noto-500;
+@use '@fontsource/noto-sans-arabic/700.css' as noto-700;
+// Icônes Material Symbols auto-hébergées
+@use 'material-symbols/outlined.css' as material-symbols;
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: cc.$primary-palette,
+      tertiary: cc.$tertiary-palette,
+    ),
+    typography: (
+      plain-family: ('Inter Variable', 'Noto Sans Arabic', system-ui, sans-serif),
+      brand-family: ('Inter Variable', 'Noto Sans Arabic', system-ui, sans-serif),
+    ),
+    density: 0,
+  ));
+
+  // Tokens applicatifs (design « clean »)
+  --cc-bg: #f2f6fa;
+  --cc-surface: #ffffff;
+  --cc-text: #1c2b36;
+  --cc-text-muted: #5c6b78;
+  --cc-primary: #155e75;
+  --cc-primary-soft: #e3eef3;
+  --cc-tertiary: #b45336;
+  --cc-radius: 16px;
+  --cc-radius-s: 10px;
+  --cc-shadow: 0 2px 10px rgba(28, 43, 54, 0.06);
+  --cc-shadow-hover: 0 6px 22px rgba(28, 43, 54, 0.1);
+  // Pastels de statut (texte + fond, jamais la couleur seule : icône/texte associés)
+  --cc-open-bg: #e7f0fb;      --cc-open-fg: #1d5fae;
+  --cc-progress-bg: #fdf1df;  --cc-progress-fg: #9a6510;
+  --cc-done-bg: #e3f6ec;      --cc-done-fg: #14805a;
+  --cc-scope-bg: #eeeaf5;     --cc-scope-fg: #5d5378;
+  --cc-danger-bg: #fdecea;    --cc-danger-fg: #b3261e;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--cc-bg);
+  color: var(--cc-text);
+  font-family: 'Inter Variable', 'Noto Sans Arabic', system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+// Densité confortable côté citoyen ; les tableaux admin utilisent une densité -1 locale.
+.admin-dense {
+  @include mat.table-density(-1);
+  @include mat.form-field-density(-1);
+}
+
+// ===== Composition « clean » via classes applicatives (pas de sélecteurs internes mat-mdc) =====
+
+.cc-card {
+  background: var(--cc-surface);
+  border-radius: var(--cc-radius);
+  box-shadow: var(--cc-shadow);
+  padding: 20px;
+}
+
+.cc-card--hover {
+  cursor: pointer;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+
+  &:hover, &:focus-visible {
+    box-shadow: var(--cc-shadow-hover);
+  }
+}
+
+// Tuile de statistique pastel (tableau de bord / accueil)
+.cc-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: var(--cc-radius);
+  padding: 18px 20px;
+  min-inline-size: 170px;
+
+  .cc-stat__icon {
+    inline-size: 44px;
+    block-size: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: var(--cc-surface);
+  }
+
+  .cc-stat__value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .cc-stat__label {
+    color: var(--cc-text-muted);
+    font-size: 13px;
+  }
+}
+
+.cc-stat--blue   { background: #e7f0fb; .cc-stat__icon { color: #1d5fae; } }
+.cc-stat--teal   { background: #e0f4f1; .cc-stat__icon { color: #0e7a6d; } }
+.cc-stat--green  { background: #e3f6ec; .cc-stat__icon { color: #14805a; } }
+.cc-stat--orange { background: #fdf1df; .cc-stat__icon { color: #9a6510; } }
+
+// Chip de statut en pilule (icône + texte)
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 15px; }
+}
+
+.cc-chip--open            { background: var(--cc-open-bg); color: var(--cc-open-fg); }
+.cc-chip--in_progress     { background: var(--cc-progress-bg); color: var(--cc-progress-fg); }
+.cc-chip--done_or_ordered { background: var(--cc-done-bg); color: var(--cc-done-fg); }
+.cc-chip--out_of_scope    { background: var(--cc-scope-bg); color: var(--cc-scope-fg); }
+.cc-chip--pending_review  { background: var(--cc-scope-bg); color: var(--cc-scope-fg); }
+.cc-chip--published       { background: var(--cc-done-bg); color: var(--cc-done-fg); }
+.cc-chip--hidden          { background: var(--cc-danger-bg); color: var(--cc-danger-fg); }
+
+// Bandeau d'avertissement (urgences, démo)
+.cc-banner {
+  border-radius: var(--cc-radius-s);
+  padding: 10px 14px;
+  font-size: 13px;
+  background: #fdf3ee;
+  color: #7a3a24;
+}
+
+.cc-banner--info {
+  background: var(--cc-primary-soft);
+  color: var(--cc-primary);
+}
+
+.cc-muted { color: var(--cc-text-muted); }
+
+// Isolation bidirectionnelle : références, e-mails, téléphones, coordonnées
+.cc-bidi {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+// La carte géographique n'est jamais inversée en RTL
+.cc-map-host { direction: ltr; }
+
+// Focus visible global
+:focus-visible {
+  outline: 2px solid var(--cc-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+// Cibles tactiles minimales
+button, a.cc-touch { min-height: 44px; }
+
+// Timeline de la fiche publique
+.cc-timeline-entry {
+  border-inline-start: 3px solid var(--cc-primary-soft);
+  padding-inline-start: 14px;
+  padding-block: 6px;
+  margin-inline-start: 6px;
+
+  .cc-timeline-date { color: var(--cc-text-muted); font-size: 12px; }
+}
+
+// Icônes : classe par défaut Material Symbols (voir app.config)
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}

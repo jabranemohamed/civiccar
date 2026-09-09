@@ -61,6 +61,24 @@ public class SubscriptionService {
         return baseUrl + "/s/confirm/" + raw;
     }
 
+    /**
+     * Demande d'abonnement complète (SPA) : crée/réutilise l'abonnement PENDING et met
+     * l'e-mail d'activation dans l'outbox. Réponse identique qu'un abonnement existe ou
+     * non (pas de divulgation). Le consentement explicite est vérifié en amont.
+     */
+    @Transactional
+    public void requestSubscriptionWithEmail(UUID reportId, String reference, String email,
+                                             java.util.Locale locale,
+                                             tn.civiccare.notifications.EmailOutboxService outbox,
+                                             tn.civiccare.notifications.EmailComposer emails) {
+        String confirmUrl = requestSubscription(reportId, email);
+        if (confirmUrl != null) {
+            outbox.enqueueEmail("subscription.confirm", email,
+                    emails.subject(locale, "email.subscription.confirm.subject", reference),
+                    emails.subscriptionConfirmBody(locale, reference, confirmUrl), null);
+        }
+    }
+
     /** Demande d'abonnement depuis la fiche publique (consentement explicite requis en amont). */
     @Transactional
     public String requestSubscription(UUID reportId, String email) {
