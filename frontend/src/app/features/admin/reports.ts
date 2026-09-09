@@ -105,6 +105,10 @@ import { StatusChip } from '../../shared/status-chip';
         <tr mat-row class="row" *matRowDef="let row; columns: columns" tabindex="0"
             (click)="open(row)" (keydown.enter)="open(row)"></tr>
       </table>
+      @if (rows().length === 0) {
+        <p class="cc-muted" style="padding:20px;text-align:center">
+          {{ 'admin.reports.empty' | t }}</p>
+      }
       <mat-paginator [length]="total()" [pageSize]="pageSize" [pageIndex]="page()"
                      (page)="onPage($event)" [hidePageSize]="true" />
     </div>

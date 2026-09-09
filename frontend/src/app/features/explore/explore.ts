@@ -44,7 +44,8 @@ type Period = 'any' | 'today' | 'week' | 'month';
       block-size: calc(100vh - 32px);
     }
     .filters { display: flex; gap: 10px; flex-wrap: wrap; }
-    .filters mat-form-field { flex: 1; min-inline-size: 120px; }
+    // assez large pour «Catégorie» / «Toutes les dates» sans troncature en mobile
+    .filters mat-form-field { flex: 1; min-inline-size: 160px; }
     .results { display: flex; flex-direction: column; gap: 10px; }
     .card { display: flex; gap: 12px; align-items: center; }
     .card img { inline-size: 64px; block-size: 64px; object-fit: cover; border-radius: 10px; }
