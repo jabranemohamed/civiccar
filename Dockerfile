@@ -1,8 +1,8 @@
-# ===== Étape 1 : build Maven avec Java 25 et bundle Vaadin de production =====
+# ===== Étape 1 : build Maven (Java 25) + SPA Angular (Node 24) =====
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 
-# Node.js requis par le build front Vaadin (>= 24)
+# Node.js 24 requis par le build Angular (matrice Angular 21 : ^20.19 || ^22.12 || ^24)
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
@@ -10,9 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN ./mvnw -q -Pproduction dependency:go-offline || true
+RUN ./mvnw -q dependency:go-offline || true
 
+# Dépendances npm mises en cache avant les sources (npm ci reproductible)
+COPY frontend/package.json frontend/package-lock.json frontend/
+RUN cd frontend && npm ci
+
+COPY frontend/ frontend/
 COPY src/ src/
+# -Pproduction : npm ci + ng build + copie du dist Angular dans static/
 RUN ./mvnw -q -Pproduction -DskipTests package
 
 # Agent Java OpenTelemetry épinglé

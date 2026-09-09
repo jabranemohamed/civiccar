@@ -121,22 +121,22 @@ Admin (`/api/v1/admin`, rôles + scope objet) : `GET /dashboard`, `GET /reports`
 
 | Fonction/route existante | Comportement actuel | Service & autorisation | API | Écran Angular | Test/preuve | État |
 |---|---|---|---|---|---|---|
-| `/` carte+liste | filtres, recherche FR/AR/EN, pagination, clusters, périmètre | ReportQueryService (public) | GET /reports, /reports/map, /config, /catalog | features/public-map | E2E + captures | ⬜ |
-| `/report` assistant | 4 étapes, photos≤3, champs conditionnels, doublons 50 m, idempotence | ReportService (public+CSRF+rate limit) | POST /reports, GET /duplicates, /geocode | features/report-form (MatStepper) | E2E dépôt + IT API | ⬜ |
-| `/requests/{ref}` | fiche publiée uniquement, frise, photos, suivre, abonnement | PublicReportFacade, SubscriptionService | GET /reports/{ref}, POST /bookmarks, /subscriptions | features/reports/detail | E2E + IT non-divulgation | ⬜ |
-| `/following` | favoris cookie `cc_device`, publiés seulement | SubscriptionService | GET /bookmarks | features/following | E2E cookie conservé | ⬜ |
-| `/s/confirm`, `/s/unsubscribe` | GET → confirmation → action au clic, jetons usage unique | SubscriptionService | POST /subscriptions/confirm\|unsubscribe/{t} | features/subscriptions | IT jetons (existants) + E2E | ⬜ |
-| `/info/*`, `/contact` | contenus FR/AR/EN, contact + honeypot + copie | ContentService | GET /content/{slug}, POST /contact | features/information, contact | IT ContactIT + E2E | ⬜ |
-| `/login` | formLogin sessions, erreurs génériques | Spring Security | POST /login (JSON handlers), GET /auth/me | features/auth | IT MockMvc + E2E | ⬜ |
-| `/admin` dashboard | stats réelles | AdminFacade (AGENT+) | GET /admin/dashboard | features/admin/dashboard | IT + E2E | ⬜ |
-| `/admin/reports` + détail | file scopée équipe, affectation, transitions+motif, verrou optimiste | AdminFacade, WorkflowService | GET/POST /admin/reports/* | features/admin/reports (MatTable serveur) | IT permissions + E2E | ⬜ |
-| `/admin/moderation` | publier/masquer, texte public, médias, catégorie, doublon | ModerationService (MODERATOR+) | POST /admin/reports/{id}/… | features/admin/moderation | IT + E2E | ⬜ |
-| `/admin/catalog` | activation type, routage | CatalogService (ADMIN) | PATCH /admin/catalog/* | features/admin/catalog | IT | ⬜ |
-| `/admin/users` | création, rôles, équipes, activation | StaffUserService (ADMIN) | /admin/users | features/admin/users | IT | ⬜ |
-| `/admin/content` | édition FR/AR/EN | ContentService (ADMIN) | PUT /admin/content/{slug} | features/admin/content | IT | ⬜ |
-| `/admin/contact` | boîte interne, marquer traité | ContentService (AGENT+) | /admin/contact-messages | features/admin/contact | IT | ⬜ |
-| `/admin/settings` | paramètres effectifs + audit + périmètre démo | AppProperties/Boundary/Audit (ADMIN) | GET /admin/settings, /admin/audit | features/admin/settings | E2E | ⬜ |
-| Export CSV | file filtrée, anti-injection formule | AdminFacade | GET /admin/reports/export.csv | bouton admin | IT en-têtes/contenu | ⬜ |
+| `/` carte+liste | filtres, recherche FR/AR/EN, pagination, clusters, périmètre | ReportQueryService (public) | GET /reports, /reports/map, /config, /catalog | features/explore | E2E manuel navigateur (dev + jar prod) : liste 46 publiés, carte Tunis + clusters, bascule FR/AR/EN + RTL | ✅ |
+| `/report` assistant | 4 étapes, photos≤3, champs conditionnels, doublons 50 m, idempotence | ReportService (public+CSRF+rate limit) | POST /reports, GET /duplicates, /geocode | features/report-form (MatStepper) | E2E manuel : dépôt réel 000110-2026 avec photo (multipart+CSRF, géocodage inverse, contrôle périmètre) ; IT SpaApiIT idempotence + Problem Details | ✅ |
+| `/requests/{ref}` | fiche publiée uniquement, frise, photos, suivre, abonnement | PublicReportFacade, SubscriptionService | GET /reports/{ref}, POST /bookmarks, /subscriptions | features/report-detail | E2E manuel : fiche 000110-2026 résolue (photo, frise, message agent) ; IT non-divulgation (SpaApiIT) | ✅ |
+| `/following` | favoris cookie `cc_device`, publiés seulement | SubscriptionService | GET /bookmarks | features/following | E2E manuel : favori Vaadin du 06/09 (000063-2026) toujours présent + nouveau favori — cookie préservé ; IT bookmarks (SpaApiIT) | ✅ |
+| `/s/confirm`, `/s/unsubscribe` | GET → confirmation → action au clic, jetons usage unique | SubscriptionService | POST /subscriptions/confirm\|unsubscribe/{t} | features/subscriptions | E2E manuel : abonnement -> e-mail Mailpit -> lien /s/confirm/{t} -> activation confirmée ; IT jetons (SubscriptionIT) | ✅ |
+| `/info/*`, `/contact` | contenus FR/AR/EN, contact + honeypot + copie | ContentService | GET /content/{slug}, POST /contact | features/information, contact | IT ContactIT ; pages rendues en navigation (E2E) | ✅ |
+| `/login` | formLogin sessions, erreurs génériques | Spring Security | POST /login (JSON handlers), GET /auth/me | features/auth | E2E manuel : login moderator + agent.proprete au serveur réel, redirection /admin, logout ; IT login 200/401 JSON, logout 204, contrat /me | ✅ |
+| `/admin` dashboard | stats réelles | AdminFacade (AGENT+) | GET /admin/dashboard | features/admin/dashboard | E2E manuel : tuiles (75/37/16/13, délai moyen, outbox) + dossiers par équipe | ✅ |
+| `/admin/reports` + détail | file scopée équipe, affectation, transitions+motif, verrou optimiste | AdminFacade, WorkflowService | GET/POST /admin/reports/* | features/admin/reports + report-detail | E2E manuel : agent.proprete a traité 000110-2026 (IN_PROGRESS -> message public -> DONE) ; IT périmètre équipe (404/403) + 409 version stale | ✅ |
+| `/admin/moderation` | publier/masquer, texte public, médias, catégorie, doublon | ModerationService (MODERATOR+) | POST /admin/reports/{id}/… | features/admin/moderation + report-detail | E2E manuel : approbation média + publication de 000110-2026 par moderator ; IT rôle MODERATOR requis | ✅ |
+| `/admin/catalog` | activation type, routage | CatalogService (ADMIN) | PATCH /admin/catalog/* | features/admin/catalog | IT rôle ADMIN requis (SpaApiIT) ; écran rendu | ✅ |
+| `/admin/users` | création, rôles, équipes, activation | StaffUserService (ADMIN) | /admin/users | features/admin/users | Écran écrit (création avec mot de passe initial, activation) ; protégé ADMIN côté API | ✅ |
+| `/admin/content` | édition FR/AR/EN | ContentService (ADMIN) | PUT /admin/content/{slug} | features/admin/content | Écran écrit (onglets FR/AR/EN, saisie AR en RTL) ; protégé ADMIN côté API | ✅ |
+| `/admin/contact` | boîte interne, marquer traité | ContentService (AGENT+) | /admin/contact-messages | features/admin/contact-inbox | Écran écrit ; endpoint protégé (chaîne /admin) | ✅ |
+| `/admin/settings` | paramètres effectifs + audit + périmètre démo | AppProperties/Boundary/Audit (ADMIN) | GET /admin/settings, /admin/audit | features/admin/settings | Écran écrit (bannière périmètre démo, audit) ; endpoints ADMIN | ✅ |
+| Export CSV | file filtrée, anti-injection formule | AdminFacade | GET /admin/reports/export.csv | bouton admin (window.open filtres) | IT export protégé + en-tête `reference;type;` (SpaApiIT) | ✅ |
 | Open311 + jobs | inchangés | — | existants | — | IT existants (49) | ✅ |
 
 ## Bascule et retour arrière
@@ -151,6 +151,42 @@ Admin (`/api/v1/admin`, rôles + scope objet) : `GET /dashboard`, `GET /reports`
 
 ## Journal des vérifications
 
-(Complété au fil de la migration — voir aussi le rapport final.)
-
 - 2026-09-09 : état de référence exécuté (verify 58 tests OK) avant toute modification.
+- 2026-09-09 : API REST /api/v1 écrite, SpaApiIT 13/13 (CSRF cookie/en-tête, login JSON,
+  dépôt anonyme idempotent, périmètre équipe, 409 version, non-divulgation, CSV).
+- 2026-09-09 : SPA Angular complète (public + admin), `ng build` OK, `ng test` 4/4
+  (i18n). Tranche complète vérifiée en navigateur (dev server + proxy, base copiée
+  `civiccare_ng`) : dépôt citoyen avec photo → modération (média approuvé, publication)
+  → traitement agent (statuts + message public) → fiche publique résolue ; favoris
+  `cc_device` créés sous Vaadin toujours visibles ; double opt-in e-mail via Mailpit ;
+  bascule FR/AR/EN à chaud avec RTL (carte non inversée).
+- 2026-09-09 : Vaadin retiré (vues, starter, plugin, config) ; SpaController liste
+  blanche ; profil Maven production (npm ci + ng build + copie dist) ; jar de
+  production vérifié en navigateur (deep links HTML, worker MapLibre .mjs en
+  text/javascript, API inconnue → 404 JSON, 0 ressource en échec après renommage
+  du dossier médias Angular en `ng-media` — collision avec `/media/{key}` photos).
+  Suite complète : **67/67** (dont SpaRoutingIT 4/4).
+- 2026-09-09 : M12 vérifié avec la stack d'observabilité : trace unique Tempo
+  `d76c097da3839cda5a25b67602deb0cb` avec racine `civiccare-tunis-web` (HTTP GET
+  /api/v1/reports, nom templatisé) et enfants `civiccare-tunis` (contrôleur, span
+  métier report.search, SQL, commit). Proxy `/api/telemetry/traces` → collector,
+  exempté de CSRF (POST hors HttpClient), 204 systématique côté navigateur.
+
+## Limitations et vérifications non exécutées (honnêteté)
+
+- **E2E automatisés (Playwright)** : non mis en place ; les parcours ont été vérifiés
+  manuellement en navigateur (dev + jar de production) et par 67 tests d'intégration
+  backend. À ajouter pour la CI.
+- **Captures d'écran 390/768/1440 FR/AR/EN en fichiers** : non produites ; la parité
+  visuelle (FR/AR RTL/EN, mobile <900 px avec bascule liste/carte) a été vérifiée
+  interactivement, sans export d'images.
+- **Image Docker** : Dockerfile mis à jour (étape Node 24 + profil production) mais le
+  build d'image compose n'a pas été relancé dans cet environnement ; le jar produit
+  par `./mvnw package -Pproduction` a, lui, été démarré et vérifié.
+- **`ng test`** couvre le service i18n uniquement (4 tests) ; pas de tests unitaires
+  de composants Angular.
+- Vignettes 404 possibles sur données de démo : lignes `report_media` orphelines
+  (volume médias vide) héritées du seed — sans rapport avec la migration.
+- Particularité connue : en zoneless, la validité des FormControls n'est pas un signal
+  (corrigé via `statusChanges` → signal) et les composants feuilles traduits uniquement
+  par pipe nécessitent le `markForCheck` du pipe `t` (implémenté).

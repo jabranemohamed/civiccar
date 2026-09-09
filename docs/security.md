@@ -2,11 +2,12 @@
 
 ## Authentification et autorisations
 
-- Spring Security 7 + `VaadinSecurityConfigurer` : CSRF Vaadin conservé (jamais désactivé
+- Spring Security 7, deux chaînes : API SPA (`/api/**`, sessions + CSRF cookie double-submit,
+  jamais désactivé
   globalement) ; seule la chaîne REST stateless `/api/**` (lecture publique) est sans CSRF.
 - Aucune inscription publique : les citoyens n'ont pas de compte. Rôles internes `AGENT`,
   `MODERATOR`, `ADMIN`.
-- Contrôles appliqués aux trois niveaux : routes Vaadin (`@AnonymousAllowed` /
+- Contrôles appliqués aux trois niveaux : autorisations HTTP (`/api/v1/admin/**` par rôle /
   `@RolesAllowed`), services (`@PreAuthorize`) et **accès objet** (un AGENT n'agit que sur
   les dossiers de ses équipes ; vérifié dans `WorkflowService`/`AdminFacade`, testé avec
   deux services distincts).
@@ -49,7 +50,7 @@
 
 ## Rendu et injections
 
-- Tout texte utilisateur est rendu **comme texte** (composants Vaadin) ; aucun HTML riche
+- Tout texte utilisateur est rendu **comme texte** (interpolation Angular) ; aucun HTML riche
   autorisé, donc pas de sanitizer nécessaire.
 - Export CSV protégé contre l'injection de formules (préfixe `'` sur `=`, `+`, `-`, `@`),
   généré par pages de 100 lignes.

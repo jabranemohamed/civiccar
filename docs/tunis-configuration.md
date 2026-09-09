@@ -54,7 +54,7 @@ vérifié, source et licence documentées ici). Variables :
 
 ## Fournisseurs géographiques
 
-- **Moteur cartographique** : MapLibre GL JS (encapsulé dans un composant Vaadin). MapLibre
+- **Moteur cartographique** : MapLibre GL JS (encapsulé dans un composant Angular). MapLibre
   n'est ni un fournisseur de tuiles ni un fournisseur d'adresses.
 - **Tuiles** : `MAP_TILE_URL` (+ `MAP_TILE_ATTRIBUTION`). Défaut de démonstration :
   tuiles raster OpenStreetMap avec attribution ODbL. Avant tout usage public, vérifier la

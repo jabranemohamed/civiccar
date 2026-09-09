@@ -28,7 +28,7 @@ pour le service `app` (variable du compose). Grafana : http://localhost:3000 (an
 - Bibliothèques instrumentées automatiquement par l'agent (vérifiées dans les traces) :
   Tomcat/servlet (HTTP serveur), JDBC/HikariCP, logback (logs OTLP corrélés), JVM runtime
   metrics, java.net.http (appels géocodeur externes lorsqu'activés).
-- Les requêtes UIDL Vaadin ne suffisent pas à identifier une opération métier : des **spans
+- Les requêtes HTTP seules ne suffisent pas à identifier une opération métier : des **spans
   métier explicites** sont créés par la façade `Telemetry`.
 
 ## Spans métier

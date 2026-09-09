@@ -7,8 +7,9 @@ un problème urbain, choisissent son type (15 familles / 40 types, français + a
 joignent des photos et suivent le traitement, sans compte. Les agents reçoivent, modèrent,
 affectent et traitent les dossiers dans un back-office.
 
-Stack : **Java 25 · Spring Boot 4.1.1 · Vaadin Flow 25.2.7 · PostgreSQL 18 + PostGIS 3.6 ·
-MapLibre GL JS · OpenTelemetry** (voir [docs/versions.md](docs/versions.md)).
+Stack : **Java 25 · Spring Boot 4.1.1 · Angular 21 + Angular Material 21 (SPA) ·
+PostgreSQL 18 + PostGIS 3.6 · MapLibre GL JS · OpenTelemetry** (voir
+[docs/versions.md](docs/versions.md) et [docs/migration-angular21.md](docs/migration-angular21.md)).
 
 ## Démarrage rapide
 
@@ -40,16 +41,25 @@ docker compose up -d db mailpit
 DB_URL=jdbc:postgresql://localhost:55432/civiccare SPRING_PROFILES_ACTIVE=demo ./mvnw spring-boot:run
 ```
 
-Note : si le port 8080 est occupé, exportez `SERVER_PORT=8081`. Le premier lancement
-construit le bundle front (Vaadin télécharge son propre Node 24 si le Node local est
-plus récent que la version supportée).
+Le backend seul ne sert pas l'UI en développement : lancez aussi le serveur Angular
+(proxy `/api` et `/media` vers :8080) :
+
+```bash
+cd frontend && npm ci && npm start -- --port 4300   # Node 24 requis (matrice Angular 21)
+```
+
+UI de développement : http://localhost:4300. Si le port 8080 est occupé, exportez
+`SERVER_PORT` et ajustez `frontend/proxy.conf.json`.
 
 ## Build et tests
 
 ```bash
 ./mvnw verify                 # tests unitaires + intégration (Testcontainers PostGIS réel)
-./mvnw -Pproduction package   # jar de production avec bundle Vaadin optimisé
+./mvnw -Pproduction package   # jar de production : npm ci + ng build + SPA dans le jar
+cd frontend && npm test       # tests unitaires Angular (vitest)
 ```
+
+Le profil `production` exige Node 24 et npm sur le PATH.
 
 Les tests d'intégration démarrent un conteneur `imresamu/postgis:18-3.6` : Docker doit
 tourner.
@@ -116,8 +126,8 @@ d'environnement correspondante est vide, le mot de passe local de développement
 
 - **Port 5432/8080 occupé** : la base est mappée sur 55432 ; exportez `SERVER_PORT` pour
   l'app locale.
-- **`npm install` échoue sur une dépendance très récente** : Vaadin refuse les paquets
-  publiés depuis < 24 h ; les versions sont épinglées pour l'éviter.
+- **Node incompatible** : Angular 21 exige Node `^20.19 || ^22.12 || ^24` ; utilisez
+  Node 24 (les versions plus récentes ne sont pas supportées par le CLI).
 - **Pas de carte** : vérifiez l'accès réseau aux tuiles (`MAP_TILE_URL`) ; la liste et la
   saisie manuelle de coordonnées restent fonctionnelles hors ligne.
 - **Mac Apple Silicon** : l'image PostGIS utilisée est multi-arch (`imresamu/postgis`).

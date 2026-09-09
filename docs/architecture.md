@@ -3,11 +3,11 @@
 ## Vue d'ensemble
 
 CivicCare Tunis est un **monolithe modulaire** : un seul exécutable Spring Boot 4 (Java 25),
-interface Vaadin Flow 25 (Java côté serveur, un composant cartographique TypeScript/JS
+SPA Angular 21 (Material 21, servie en ressources statiques par Spring Boot, MapLibre
 encapsulé), PostgreSQL 18 + PostGIS 3.6, migrations Flyway.
 
 ```
-Navigateur ── Vaadin Flow (vues Java, MapLibre encapsulé)
+Navigateur ── SPA Angular (REST /api/v1, MapLibre encapsulé)
       │              │
       │        Services applicatifs (validations, autorisations, transactions)
 REST (Open311, médias)                │
@@ -36,7 +36,7 @@ REST (Open311, médias)                │
 | `observability` | Façade OpenTelemetry (spans métier, métriques, jauges) |
 | `shared` | Configuration, i18n, limiteur de débit, layout public |
 
-Dans chaque module : les vues Vaadin appellent les **services applicatifs** ; aucun accès
+Dans chaque module : les contrôleurs REST (`api/`) appellent les **services applicatifs** ; aucun accès
 JPA direct depuis les composants. UI et API partagent les mêmes validations, autorisations
 et projections publiques.
 
@@ -53,7 +53,7 @@ et projections publiques.
 - **Visibilité publique** : une seule règle (`publication_status='PUBLISHED'`, archives sur
   filtre explicite) appliquée par `ReportQueryService`, `PublicReportFacade`, l'API Open311
   et le contrôleur de médias.
-- **Contrôle d'accès en profondeur** : annotations sur les routes Vaadin **et**
+- **Contrôle d'accès en profondeur** : autorisations HTTP sur `/api/v1/admin/**` **et**
   `@PreAuthorize` + contrôle objet (équipe du dossier) dans les services. Masquer un bouton
   n'est pas un contrôle d'accès.
 - **Requêtes spatiales** : `geometry(Point,4326)` + index GiST (géométrie et geography) ;

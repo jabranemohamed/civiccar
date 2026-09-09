@@ -47,7 +47,7 @@ d'exécution en fin de document).
 
 | ID | Statut | Preuve / limite |
 |---|---|---|
-| A01 | ✅ | `./mvnw -Pproduction package` OK (bundle Vaadin prod) ; démarrage sur base vierge (9 migrations) puis redémarrage avec données conservées vérifiés |
+| A01 | ✅ | `./mvnw -Pproduction package` OK (SPA Angular dans le jar) ; démarrage sur base vierge (9 migrations) puis redémarrage avec données conservées vérifiés |
 | A02 | ✅ | `CatalogIT` : 15 familles, 40 types, recherche FR sans accents + AR, aides |
 | A03 | ✅ | `ReportCreationIT` : 0 photo OK, 3 photos OK, 4e refusée, SVG/WebP refusés, 12 Mo refusé, description vide/301 refusées — côté serveur |
 | A04 | ✅ | e-mail/consentement requis, téléphone facultatif validé (TN + international) ; refus GPS → saisie manuelle (navigateur) |
@@ -75,7 +75,7 @@ d'exécution en fin de document).
   ReportCreationIT (9), VisibilityAndDuplicatesIT (5), WorkflowAndPermissionsIT (8),
   RetentionIT (3), SubscriptionIT (4), Open311ContractIT (7), ContactIT (5),
   ImageProcessorTest (5), PhoneNormalizerTest (3).
-- `./mvnw -Pproduction package` : BUILD SUCCESS (bundle Vaadin de production,
+- `./mvnw -Pproduction package` : BUILD SUCCESS (SPA Angular de production,
   jar 74,5 Mo).
 - `docker compose --profile observability up --build -d` : 8 conteneurs sains
   (app avec agent OTel, db PostGIS, Mailpit, collector, Tempo, Loki, Prometheus, Grafana).
