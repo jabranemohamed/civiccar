@@ -36,7 +36,11 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "outputPath": {
+              "base": "dist/frontend",
+              "media": "ng-media"
+            }
           },
           "configurations": {
             "production": {

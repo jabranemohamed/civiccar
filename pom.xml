@@ -21,20 +21,12 @@
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
-        <vaadin.version>25.2.7</vaadin.version>
         <opentelemetry.version>1.65.0</opentelemetry.version>
         <libphonenumber.version>9.0.38</libphonenumber.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-bom</artifactId>
-                <version>${vaadin.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom</artifactId>
@@ -46,23 +38,12 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Vaadin: composants libres uniquement (vaadin-core), pas de composants commerciaux -->
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-spring-boot-starter</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.vaadin</groupId>
-                    <artifactId>vaadin</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-core</artifactId>
-        </dependency>
-
         <!-- Spring -->
+        <dependency>
+            <!-- Serveur web MVC (auparavant transitif via le starter Vaadin) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -155,18 +136,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-frontend</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Tests d'intégration *IT (Testcontainers PostGIS) exécutés par `verify` -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -185,32 +154,59 @@
 
     <profiles>
         <profile>
-            <!-- Outils de développement Vaadin : actifs par défaut, exclus par -Pproduction -->
-            <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.vaadin</groupId>
-                    <artifactId>vaadin-dev</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
+            <!-- Build production : npm ci + ng build, puis copie du dist Angular dans
+                 les ressources statiques du jar. Nécessite Node 24 (voir README). -->
             <id>production</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.vaadin</groupId>
-                        <artifactId>vaadin-maven-plugin</artifactId>
-                        <version>${vaadin.version}</version>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
                         <executions>
                             <execution>
-                                <goals>
-                                    <goal>build-frontend</goal>
-                                </goals>
-                                <phase>compile</phase>
+                                <id>npm-ci</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>npm</executable>
+                                    <arguments><argument>ci</argument></arguments>
+                                    <workingDirectory>${project.basedir}/frontend</workingDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ng-build</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>npx</executable>
+                                    <arguments>
+                                        <argument>ng</argument>
+                                        <argument>build</argument>
+                                        <argument>--configuration</argument>
+                                        <argument>production</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.basedir}/frontend</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-angular-dist</id>
+                                <phase>process-resources</phase>
+                                <goals><goal>copy-resources</goal></goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/frontend/dist/frontend/browser</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

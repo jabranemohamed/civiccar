@@ -27,9 +27,10 @@ server:
   error:
     include-stacktrace: never
 
-vaadin:
-  launch-browser: false
-  allowed-packages: tn.civiccare
+# Ressources statiques SPA : 1 h par défaut (les assets non fingerprintés — i18n/*.json,
+# maplibre/*.mjs — doivent pouvoir se rafraîchir après déploiement ; les bundles Angular
+# sont de toute façon fingerprintés et re-résolus via index.html no-cache)
+spring.web.resources.cache.cachecontrol.max-age: 1h
 
 management:
   endpoints:

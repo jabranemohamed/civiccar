@@ -1,6 +1,5 @@
 package tn.civiccare.identity;
 
-import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,14 +15,15 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tn.civiccare.api.SpaCsrfTokenRequestHandler;
-import tn.civiccare.identity.ui.LoginView;
 
 /**
- * Sécurité en deux chaînes pendant la migration :
+ * Sécurité en deux chaînes :
  * 1. /api/** : API de la SPA Angular — sessions Spring, CSRF cookie (XSRF-TOKEN lisible,
  *    en-tête X-XSRF-TOKEN), login/logout JSON, réponses 401/403 en Problem Details
  *    (jamais de redirection HTML pour une API).
- * 2. Le reste : Vaadin (retiré en fin de migration).
+ * 2. Le reste : ressources statiques de la SPA, médias et actuator — tout en permitAll
+ *    (les routes profondes /admin/** servent index.html à l'anonyme ; la protection des
+ *    données est assurée par la chaîne API, le guard Angular ne fait que l'ergonomie).
  */
 @Configuration
 @EnableWebSecurity
@@ -95,17 +95,13 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /** Chaîne Vaadin, inchangée pendant la coexistence (retirée en fin de migration). */
+    /** Chaîne statique : SPA, médias, actuator. Aucune session, aucun CSRF (GET seulement). */
     @Bean
     @org.springframework.core.annotation.Order(2)
-    SecurityFilterChain vaadinFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**", "/actuator/prometheus", "/media/**")
-                .permitAll()
-                .requestMatchers("/", "/report", "/requests/**", "/following", "/info", "/info/**",
-                        "/contact", "/s/**", "/login")
-                .permitAll());
-        http.with(VaadinSecurityConfigurer.vaadin(), configurer -> configurer.loginView(LoginView.class));
+    SecurityFilterChain staticFilterChain(HttpSecurity http) throws Exception {
+        http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
 

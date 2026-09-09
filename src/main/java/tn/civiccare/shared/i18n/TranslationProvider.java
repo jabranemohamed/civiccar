@@ -1,6 +1,5 @@
 package tn.civiccare.shared.i18n;
 
-import com.vaadin.flow.i18n.I18NProvider;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
@@ -13,7 +12,7 @@ import java.util.ResourceBundle;
  * Toutes les chaînes sont externalisées dans i18n/messages*.properties.
  */
 @Component
-public class TranslationProvider implements I18NProvider {
+public class TranslationProvider {
 
     public static final Locale FRENCH = Locale.forLanguageTag("fr");
     public static final Locale ARABIC = Locale.forLanguageTag("ar");
@@ -21,7 +20,6 @@ public class TranslationProvider implements I18NProvider {
     private static final List<Locale> LOCALES = List.of(FRENCH, ARABIC, ENGLISH);
     private static final String BUNDLE = "i18n.messages";
 
-    @Override
     public List<Locale> getProvidedLocales() {
         return LOCALES;
     }
@@ -48,7 +46,6 @@ public class TranslationProvider implements I18NProvider {
                 ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES));
     }
 
-    @Override
     public String getTranslation(String key, Locale locale, Object... params) {
         Locale effective = supported(locale);
         ResourceBundle bundle = bundle(effective);
