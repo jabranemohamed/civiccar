@@ -29,7 +29,15 @@ import { StatusChip } from '../../shared/status-chip';
     MatInputModule, MatSelectModule, MatProgressSpinnerModule, TPipe, StatusChip],
   styles: `
     .page { display: flex; flex-direction: column; gap: 14px; max-inline-size: 1000px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+    // Rangées d'actions : centrage vertical + espacement entre rangées (les labels
+    // flottants Material dépassent du champ : sans marge, ils chevauchent la rangée
+    // précédente lors du retour à la ligne).
+    .row {
+      display: flex; gap: 12px 16px; flex-wrap: wrap; align-items: center;
+    }
+    .row + .row { margin-block-start: 16px; }
+    .row mat-form-field { min-inline-size: 220px; }
+    .row button { flex-shrink: 0; }
     .gallery { display: flex; gap: 12px; flex-wrap: wrap; }
     .gallery img { inline-size: 130px; border-radius: 10px; display: block; }
     .private { background: var(--cc-bg); }
@@ -181,6 +189,7 @@ import { StatusChip } from '../../shared/status-chip';
           <h2>{{ 'admin.report.changeStatus' | t }}</h2>
           <div class="row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:280px">
+              <mat-label>{{ 'admin.reports.status' | t }}</mat-label>
               <mat-select [formControl]="targetStatus" id="status-select">
                 @for (target of d.allowedTransitions; track target) {
                   <mat-option [value]="target">{{ 'status.' + target | t }}</mat-option>
