@@ -58,12 +58,13 @@ import { TPipe } from '../../core/t.pipe';
         </ng-container>
         <ng-container matColumnDef="action">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.audit.action' | t }}</th>
-          <td mat-cell *matCellDef="let entry">{{ entry.action }}</td>
+          <td mat-cell *matCellDef="let entry">{{ actionLabel(entry.action) }}</td>
         </ng-container>
         <ng-container matColumnDef="target">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.audit.target' | t }}</th>
           <td mat-cell *matCellDef="let entry">
-            {{ entry.targetType }} <span class="cc-bidi">{{ entry.targetId }}</span></td>
+            {{ targetLabel(entry.targetType) }}
+            <span class="cc-bidi">{{ entry.targetId }}</span></td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
         <tr mat-row *matRowDef="let row; columns: columns"></tr>
@@ -82,5 +83,19 @@ export class AdminSettingsPage {
   constructor() {
     void firstValueFrom(this.api.adminSettings()).then((s) => this.settings.set(s));
     void firstValueFrom(this.api.adminAudit()).then((a) => this.audit.set(a));
+  }
+
+  /** Libellé traduit d'une action d'audit ; code brut si clé inconnue (codes futurs). */
+  actionLabel(code: string): string {
+    if (code.startsWith('STATUS_')) {
+      return this.i18n.t('audit.action.status', this.i18n.t('status.' + code.slice(7)));
+    }
+    const label = this.i18n.t('audit.action.' + code);
+    return label.startsWith('!') ? code : label;
+  }
+
+  targetLabel(type: string): string {
+    const label = this.i18n.t('audit.target.' + type);
+    return label.startsWith('!') ? type : label;
   }
 }

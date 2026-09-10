@@ -39,7 +39,7 @@ import { markAllTouched } from '../../core/forms';
         </ng-container>
         <ng-container matColumnDef="roles">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.users.roles' | t }}</th>
-          <td mat-cell *matCellDef="let user">{{ user.roles.join(', ') }}</td>
+          <td mat-cell *matCellDef="let user">{{ roleLabels(user.roles) }}</td>
         </ng-container>
         <ng-container matColumnDef="departments">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.department' | t }}</th>
@@ -75,8 +75,8 @@ import { markAllTouched } from '../../core/forms';
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.users.roles' | t }}</mat-label>
           <mat-select [formField]="account.role">
-            <mat-option value="AGENT">AGENT</mat-option>
-            <mat-option value="MODERATOR">MODERATOR</mat-option>
+            <mat-option value="AGENT">{{ 'role.AGENT' | t }}</mat-option>
+            <mat-option value="MODERATOR">{{ 'role.MODERATOR' | t }}</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -122,6 +122,10 @@ export class AdminUsers {
 
   private async reload(): Promise<void> {
     this.users.set(await firstValueFrom(this.api.adminUsers()));
+  }
+
+  roleLabels(roles: string[]): string {
+    return roles.map((role) => this.i18n.t('role.' + role)).join(', ');
   }
 
   async setEnabled(user: AdminUser, enabled: boolean): Promise<void> {
