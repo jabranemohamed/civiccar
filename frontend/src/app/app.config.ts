@@ -51,6 +51,11 @@ export const appConfig: ApplicationConfig = {
       const config = inject(ConfigService);
       const auth = inject(AuthService);
       await Promise.all([i18n.load(), config.load(), auth.resolve()]);
+      // Titre de l'onglet : nom d'application configuré (APP_NAME), pas le défaut du build
+      const appName = config.get()?.appName;
+      if (appName) {
+        document.title = appName;
+      }
     }),
   ],
 };
