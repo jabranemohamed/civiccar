@@ -79,6 +79,14 @@ export class I18nService {
     }
     return labels[this.locale()] || labels.fr || '';
   }
+
+  /** Nom localisé d'une équipe (fr/ar seulement ; l'anglais replie sur le français). */
+  deptName(dept: { nameFr: string; nameAr: string } | null | undefined): string {
+    if (!dept) {
+      return '';
+    }
+    return this.locale() === 'ar' ? dept.nameAr : dept.nameFr;
+  }
 }
 
 /** Directionality CDK pilotée par la locale : overlays/menus/datepicker corrects en RTL. */

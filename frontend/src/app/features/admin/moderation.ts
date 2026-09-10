@@ -32,7 +32,8 @@ import { StatusChip } from '../../shared/status-chip';
         </ng-container>
         <ng-container matColumnDef="type">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.type' | t }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.typeLabelFr }}</td>
+          <td mat-cell *matCellDef="let row">
+            {{ i18n.label({ fr: row.typeLabelFr, ar: row.typeLabelAr, en: row.typeLabelEn }) }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.status' | t }}</th>

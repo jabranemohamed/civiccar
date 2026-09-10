@@ -28,10 +28,8 @@ import { TPipe } from '../../core/t.pipe';
       @for (type of types(); track type.id) {
         <div class="type-row">
           <div class="labels">
-            <div class="group">{{ type.groupLabelFr }}</div>
-            <strong>{{ type.labelFr }}</strong>
-            <span class="cc-muted"> · <span class="cc-bidi">{{ type.labelAr }}</span>
-              · {{ type.labelEn }}</span>
+            <div class="group">{{ i18n.label(type.groupLabels) }}</div>
+            <strong>{{ i18n.label({ fr: type.labelFr, ar: type.labelAr, en: type.labelEn }) }}</strong>
           </div>
           <mat-form-field appearance="outline" subscriptSizing="dynamic"
                           style="inline-size:240px">
@@ -39,7 +37,7 @@ import { TPipe } from '../../core/t.pipe';
             <mat-select [value]="ruleOf(type.id)?.departmentId ?? null"
                         (valueChange)="routeTo(type.id, $event)">
               @for (dept of departments(); track dept.id) {
-                <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
+                <mat-option [value]="dept.id">{{ i18n.deptName(dept) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -55,7 +53,7 @@ import { TPipe } from '../../core/t.pipe';
 export class AdminCatalogPage {
   private readonly api = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly i18n = inject(I18nService);
+  readonly i18n = inject(I18nService);
 
   readonly catalog = signal<AdminCatalog | null>(null);
   readonly departments = signal<Department[]>([]);

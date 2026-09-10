@@ -43,8 +43,10 @@ public class AdminFacade {
         }
     }
 
-    public record WorkQueueRow(UUID id, String reference, String typeLabelFr, WorkflowStatus status,
-                               PublicationStatus publication, String departmentName, String assigneeName,
+    public record WorkQueueRow(UUID id, String reference, String typeLabelFr, String typeLabelAr,
+                               String typeLabelEn, WorkflowStatus status,
+                               PublicationStatus publication, String departmentName,
+                               String departmentNameAr, String assigneeName,
                                Instant createdAt, double longitude, double latitude) {
     }
 
@@ -66,8 +68,10 @@ public class AdminFacade {
     public List<WorkQueueRow> workQueue(String username, WorkQueueFilter filter, int offset, int limit) {
         StaffUser user = requireUser(username);
         StringBuilder sql = new StringBuilder("""
-                SELECT r.id, r.reference, st.label_fr, r.workflow_status, r.publication_status,
-                       d.name_fr, su.display_name, r.created_at, ST_X(r.location), ST_Y(r.location)
+                SELECT r.id, r.reference, st.label_fr, st.label_ar, st.label_en,
+                       r.workflow_status, r.publication_status,
+                       d.name_fr, d.name_ar, su.display_name, r.created_at,
+                       ST_X(r.location), ST_Y(r.location)
                 FROM report r
                 JOIN service_type st ON st.id = r.service_type_id
                 LEFT JOIN department d ON d.id = r.department_id
@@ -104,10 +108,11 @@ public class AdminFacade {
         List<Object[]> rows = query.getResultList();
         List<WorkQueueRow> out = new ArrayList<>();
         for (Object[] r : rows) {
-            out.add(new WorkQueueRow((UUID) r[0], (String) r[1], (String) r[2],
-                    WorkflowStatus.valueOf((String) r[3]), PublicationStatus.valueOf((String) r[4]),
-                    (String) r[5], (String) r[6], toInstant(r[7]),
-                    ((Number) r[8]).doubleValue(), ((Number) r[9]).doubleValue()));
+            out.add(new WorkQueueRow((UUID) r[0], (String) r[1], (String) r[2], (String) r[3],
+                    r[4] == null ? (String) r[2] : (String) r[4],
+                    WorkflowStatus.valueOf((String) r[5]), PublicationStatus.valueOf((String) r[6]),
+                    (String) r[7], (String) r[8], (String) r[9], toInstant(r[10]),
+                    ((Number) r[11]).doubleValue(), ((Number) r[12]).doubleValue()));
         }
         return out;
     }

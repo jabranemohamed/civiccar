@@ -106,7 +106,7 @@ interface PendingPhoto {
               }
               @if (config.get()?.geocoderDemo && geoResults().length > 0) {
                 <span class="cc-muted" style="font-size:12px">
-                  Résultats de démonstration — نتائج تجريبية — demo results</span>
+                  {{ 'wizard.position.geocoder.demo' | t }}</span>
               }
             </div>
             <cc-map #pickerMap height="360px" [picker]="true" (picked)="onPicked($event)" />

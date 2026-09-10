@@ -236,6 +236,7 @@
   "wizard.field.required": "This field is required.",
   "wizard.next": "Continue",
   "wizard.position.address": "Address or description of the place",
+  "wizard.position.geocoder.demo": "Demo results (offline geocoder).",
   "wizard.position.geocoder.none": "Address not found. You can place the marker manually on the map.",
   "wizard.position.intro": "Where is the problem? Search for an address, use your location or place the marker on the map.",
   "wizard.position.lat": "Latitude",

@@ -236,6 +236,7 @@
   "wizard.field.required": "Ce champ est requis.",
   "wizard.next": "Continuer",
   "wizard.position.address": "Adresse ou description du lieu",
+  "wizard.position.geocoder.demo": "Résultats de démonstration (géocodeur hors ligne).",
   "wizard.position.geocoder.none": "Adresse introuvable. Vous pouvez placer le repère manuellement sur la carte.",
   "wizard.position.intro": "Où se situe le problème ? Recherchez une adresse, utilisez votre position ou placez le repère sur la carte.",
   "wizard.position.lat": "Latitude",

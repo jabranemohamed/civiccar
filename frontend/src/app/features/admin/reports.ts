@@ -56,7 +56,7 @@ import { StatusChip } from '../../shared/status-chip';
         <mat-select [value]="departmentId()" (valueChange)="departmentId.set($event); reload()">
           <mat-option [value]="null">{{ 'filter.all' | t }}</mat-option>
           @for (dept of departments(); track dept.id) {
-            <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
+            <mat-option [value]="dept.id">{{ i18n.deptName(dept) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -76,7 +76,8 @@ import { StatusChip } from '../../shared/status-chip';
         </ng-container>
         <ng-container matColumnDef="type">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.type' | t }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.typeLabelFr }}</td>
+          <td mat-cell *matCellDef="let row">
+            {{ i18n.label({ fr: row.typeLabelFr, ar: row.typeLabelAr, en: row.typeLabelEn }) }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.status' | t }}</th>
@@ -89,7 +90,8 @@ import { StatusChip } from '../../shared/status-chip';
         </ng-container>
         <ng-container matColumnDef="department">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.department' | t }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.departmentName ?? '—' }}</td>
+          <td mat-cell *matCellDef="let row">
+            {{ (i18n.locale() === 'ar' ? row.departmentNameAr : row.departmentName) ?? '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="assignee">
           <th mat-header-cell *matHeaderCellDef>{{ 'admin.reports.assignee' | t }}</th>

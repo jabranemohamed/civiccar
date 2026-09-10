@@ -118,13 +118,19 @@ public class AdminApi {
         dto.put("version", report.getVersion());
         dto.put("type", Map.of("id", report.getServiceType().getId(),
                 "code", report.getServiceType().getCode(),
-                "labelFr", report.getServiceType().getLabelFr()));
+                "labelFr", report.getServiceType().getLabelFr(),
+                "labels", Map.of(
+                        "fr", report.getServiceType().getLabelFr(),
+                        "ar", report.getServiceType().getLabelAr(),
+                        "en", report.getServiceType().label(TranslationProvider.ENGLISH))));
         dto.put("workflowStatus", report.getWorkflowStatus().name());
         dto.put("publicationStatus", report.getPublicationStatus().name());
         dto.put("allowedTransitions", report.getWorkflowStatus().allowedTransitions().stream()
                 .map(Enum::name).sorted().toList());
         dto.put("department", report.getDepartment() == null ? null
-                : Map.of("id", report.getDepartment().getId(), "nameFr", report.getDepartment().getNameFr()));
+                : Map.of("id", report.getDepartment().getId(),
+                "nameFr", report.getDepartment().getNameFr(),
+                "nameAr", report.getDepartment().getNameAr()));
         dto.put("assignee", report.getAssignee() == null ? null
                 : Map.of("id", report.getAssignee().getId(),
                 "displayName", report.getAssignee().getDisplayName()));
@@ -291,6 +297,10 @@ public class AdminApi {
                 .<Map<String, Object>>map(t -> Map.of(
                         "id", t.getId(), "code", t.getCode(),
                         "groupLabelFr", t.getGroup().getLabelFr(),
+                        "groupLabels", Map.of(
+                                "fr", t.getGroup().getLabelFr(),
+                                "ar", t.getGroup().getLabelAr(),
+                                "en", t.getGroup().label(TranslationProvider.ENGLISH)),
                         "labelFr", t.getLabelFr(), "labelAr", t.getLabelAr(),
                         "labelEn", t.label(TranslationProvider.ENGLISH),
                         "active", t.isActive()))

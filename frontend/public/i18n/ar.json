@@ -236,6 +236,7 @@
   "wizard.field.required": "هذه الخانة مطلوبة.",
   "wizard.next": "متابعة",
   "wizard.position.address": "العنوان أو وصف المكان",
+  "wizard.position.geocoder.demo": "نتائج تجريبية (مُرمِّز جغرافي دون اتصال).",
   "wizard.position.geocoder.none": "العنوان غير موجود. يمكنكم وضع العلامة يدوياً على الخريطة.",
   "wizard.position.intro": "أين توجد المشكلة؟ ابحثوا عن عنوان أو استعملوا موقعكم أو ضعوا العلامة على الخريطة.",
   "wizard.position.lat": "خط العرض",

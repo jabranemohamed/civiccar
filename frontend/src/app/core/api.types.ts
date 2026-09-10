@@ -165,9 +165,12 @@ export interface WorkQueueRow {
   id: string;
   reference: string;
   typeLabelFr: string;
+  typeLabelAr: string;
+  typeLabelEn: string;
   status: WorkflowStatus;
   publication: PublicationStatus;
   departmentName: string | null;
+  departmentNameAr: string | null;
   assigneeName: string | null;
   createdAt: string;
   longitude: number;
@@ -178,11 +181,11 @@ export interface AdminReportDetail {
   id: string;
   reference: string;
   version: number;
-  type: { id: string; code: string; labelFr: string };
+  type: { id: string; code: string; labelFr: string; labels: Labels };
   workflowStatus: WorkflowStatus;
   publicationStatus: PublicationStatus;
   allowedTransitions: WorkflowStatus[];
-  department: { id: string; nameFr: string } | null;
+  department: { id: string; nameFr: string; nameAr: string } | null;
   assignee: { id: string; displayName: string } | null;
   address: string | null;
   position: { lon: number; lat: number };
@@ -224,6 +227,7 @@ export interface AdminCatalog {
     id: string;
     code: string;
     groupLabelFr: string;
+    groupLabels: Labels;
     labelFr: string;
     labelAr: string;
     labelEn: string;

@@ -11,7 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../core/api.service';
-import { AdminReportDetail, Department, ProblemDetails, WorkflowStatus } from '../../core/api.types';
+import { AdminCatalog, AdminReportDetail, Department, ProblemDetails, WorkflowStatus } from '../../core/api.types';
 import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n.service';
 import { TPipe } from '../../core/t.pipe';
@@ -53,7 +53,7 @@ import { StatusChip } from '../../shared/status-chip';
         @let d = detail()!;
         <div class="cc-card">
           <h1 style="margin:0">
-            <span class="cc-bidi">{{ d.reference }}</span> — {{ d.type.labelFr }}</h1>
+            <span class="cc-bidi">{{ d.reference }}</span> — {{ i18n.label(d.type.labels) }}</h1>
           <div class="row" style="margin-top:8px">
             <cc-status-chip [status]="d.workflowStatus" [archived]="!!d.archivedAt" />
             <cc-status-chip [status]="d.publicationStatus" kind="publication" />
@@ -148,7 +148,10 @@ import { StatusChip } from '../../shared/status-chip';
                 <mat-label>{{ 'admin.report.changeCategory' | t }}</mat-label>
                 <mat-select [formField]="actions.newTypeId">
                   @for (type of catalogTypes(); track type.id) {
-                    <mat-option [value]="type.id">{{ type.groupLabelFr }} — {{ type.labelFr }}</mat-option>
+                    <mat-option [value]="type.id">
+                      {{ i18n.label(type.groupLabels) }} —
+                      {{ i18n.label({ fr: type.labelFr, ar: type.labelAr, en: type.labelEn }) }}
+                    </mat-option>
                   }
                 </mat-select>
               </mat-form-field>
@@ -166,7 +169,7 @@ import { StatusChip } from '../../shared/status-chip';
               <mat-select [formField]="actions.departmentId"
                           (valueChange)="loadAgents($event)">
                 @for (dept of departments(); track dept.id) {
-                  <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
+                  <mat-option [value]="dept.id">{{ i18n.deptName(dept) }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
@@ -283,8 +286,7 @@ export class AdminReportDetailPage implements OnInit {
   readonly loading = signal(true);
   readonly departments = signal<Department[]>([]);
   readonly agents = signal<{ id: string; displayName: string }[]>([]);
-  readonly catalogTypes = signal<
-    { id: string; code: string; groupLabelFr: string; labelFr: string }[]>([]);
+  readonly catalogTypes = signal<AdminCatalog['types']>([]);
 
   /** Toutes les saisies d'action de la fiche dans un seul modèle Signal Forms. */
   private readonly actionsModel = signal({

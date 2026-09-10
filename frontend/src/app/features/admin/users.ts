@@ -83,7 +83,7 @@ import { markAllTouched } from '../../core/forms';
           <mat-label>{{ 'admin.reports.department' | t }}</mat-label>
           <mat-select [formField]="account.departmentIds" multiple>
             @for (dept of departments(); track dept.id) {
-              <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
+              <mat-option [value]="dept.id">{{ i18n.deptName(dept) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -96,7 +96,7 @@ import { markAllTouched } from '../../core/forms';
 export class AdminUsers {
   private readonly api = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly i18n = inject(I18nService);
+  readonly i18n = inject(I18nService);
 
   readonly columns = ['username', 'displayName', 'roles', 'departments', 'enabled'];
   readonly users = signal<AdminUser[]>([]);
