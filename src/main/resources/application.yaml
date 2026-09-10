@@ -17,13 +17,19 @@ spring:
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}
+    # Relais authentifié (ex. Brevo : port 587, STARTTLS). Vide/false = Mailpit local.
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      "mail.smtp.auth": ${SMTP_AUTH:false}
+      "mail.smtp.starttls.enable": ${SMTP_STARTTLS:false}
   servlet:
     multipart:
       max-file-size: 12MB
       max-request-size: 40MB
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:${PORT:8080}}
   error:
     include-stacktrace: never
 
@@ -45,6 +51,10 @@ management:
 civiccare:
   # Nom public affiché (en-tête, connexion). La ville/le pays cible reste configurable.
   app-name: ${APP_NAME:CivicCare Tunis}
+  # URL publique de l'application : base des liens dans les e-mails (/s/confirm…).
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  mail:
+    from: ${MAIL_FROM:no-reply@civiccare-tunis.example}
   timezone: ${APP_TIMEZONE:Africa/Tunis}
   # Pays cible (ISO 3166-1 alpha-2) : géocodage et région téléphonique par défaut.
   country-code: ${APP_COUNTRY:TN}

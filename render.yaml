@@ -1,0 +1,56 @@
+# Blueprint Render — déploiement gratuit de CivicCare Tunis (démo).
+# Base de données : Neon (PostGIS), non gérée par Render — renseigner DB_URL/DB_USER/DB_PASSWORD.
+# E-mails : Brevo (SMTP authentifié), renseigner SMTP_USER/SMTP_PASSWORD/MAIL_FROM.
+# Voir docs/deploy-render.md pour le pas-à-pas.
+services:
+  - type: web
+    name: civiccare-tunis
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      # --- Profil démo : périmètre de démonstration, jeu de données seedé ---
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo
+      # --- JVM dans 512 Mo : bornes explicites (mesuré ~490 Mo RSS sous charge).
+      #     En cas d'OOM : abaisser -Xmx à 192m. ---
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx224m -XX:MaxMetaspaceSize=112m -XX:ReservedCodeCacheSize=48m -XX:+UseSerialGC -Xss512k"
+      - key: SERVER_TOMCAT_THREADS_MAX
+        value: "20"
+      # --- Pas de stack d'observabilité sur l'offre gratuite ---
+      - key: OTEL_SDK_DISABLED
+        value: "true"
+      # --- Base Neon (PostGIS) : jdbc:postgresql://HOTE/BASE?sslmode=require ---
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # --- URL publique du service (liens des e-mails), ex. https://civiccare-tunis.onrender.com ---
+      - key: APP_BASE_URL
+        sync: false
+      # --- SMTP Brevo ---
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_AUTH
+        value: "true"
+      - key: SMTP_STARTTLS
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # --- Comptes de démonstration : mots de passe forts générés par Render ---
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        generateValue: true
+      - key: MODERATOR_BOOTSTRAP_PASSWORD
+        generateValue: true
+      - key: AGENT_BOOTSTRAP_PASSWORD
+        generateValue: true
