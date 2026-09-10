@@ -47,10 +47,13 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
-      # --- Comptes de démonstration : mots de passe forts générés par Render ---
+      # --- Comptes de démonstration : le bootstrap CRÉE sans jamais mettre à jour.
+      #     Si la base a été pré-provisionnée (voir docs/deploy-render.md), mettre ici
+      #     les mots de passe utilisés au provisionnement ; sur base vierge, choisir
+      #     des valeurs fortes — elles ne seront appliquées qu'au premier démarrage. ---
       - key: ADMIN_BOOTSTRAP_PASSWORD
-        generateValue: true
+        sync: false
       - key: MODERATOR_BOOTSTRAP_PASSWORD
-        generateValue: true
+        sync: false
       - key: AGENT_BOOTSTRAP_PASSWORD
-        generateValue: true
+        sync: false

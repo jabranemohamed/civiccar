@@ -51,9 +51,17 @@ fonctionne — seuls les e-mails d'abonnement partent en erreur dans l'outbox
 
 ## 4. Comptes de démonstration
 
-Les mots de passe des comptes `admin`, `moderator`, `agent.proprete`,
-`agent.voirie` sont **générés par Render** (`generateValue: true`) : les lire
-dans *Environment* du service. Ne jamais réutiliser les mots de passe de dev.
+Le bootstrap **crée les comptes s'ils n'existent pas, sans jamais mettre à
+jour un mot de passe existant**. Deux cas :
+
+- **Base pré-provisionnée** (migrations + seed déjà exécutés en local contre
+  Neon) : renseigner dans Render les mots de passe utilisés au provisionnement
+  — les valeurs saisies ne servent alors qu'à documenter.
+- **Base vierge** : choisir des valeurs fortes ; elles seront appliquées au
+  premier démarrage. Ne jamais réutiliser les mots de passe de dev.
+
+Pour réinitialiser un mot de passe : supprimer la ligne `staff_user`
+correspondante puis redémarrer le service (le bootstrap recrée le compte).
 
 ## 5. Vérifications après déploiement
 
