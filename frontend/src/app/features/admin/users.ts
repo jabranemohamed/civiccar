@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormField, form, minLength, pattern, required, submit } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,11 +13,12 @@ import { ApiService } from '../../core/api.service';
 import { AdminUser, Department } from '../../core/api.types';
 import { I18nService } from '../../core/i18n.service';
 import { TPipe } from '../../core/t.pipe';
+import { markAllTouched } from '../../core/forms';
 
 /** Comptes internes (ADMIN) : liste, activation, création d'un agent (comptes démo). */
 @Component({
   selector: 'cc-admin-users',
-  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule,
+  imports: [FormField, MatButtonModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatSlideToggleModule, MatTableModule, TPipe],
   styles: `
     table { inline-size: 100%; }
@@ -57,35 +58,36 @@ import { TPipe } from '../../core/t.pipe';
 
     <div class="cc-card">
       <h2 style="font-size:16px;margin:0 0 10px">{{ 'admin.users.create' | t }}</h2>
-      <form class="create" [formGroup]="form" (ngSubmit)="create()">
+      <form class="create" (submit)="$event.preventDefault(); create()">
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'login.username' | t }}</mat-label>
-          <input matInput formControlName="username" autocomplete="off" />
+          <input matInput [formField]="account.username" autocomplete="off" />
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.users.displayName' | t }}</mat-label>
-          <input matInput formControlName="displayName" />
+          <input matInput [formField]="account.displayName" />
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'login.password' | t }}</mat-label>
-          <input matInput type="password" formControlName="password" autocomplete="new-password" />
+          <input matInput type="password" [formField]="account.password"
+                 autocomplete="new-password" />
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.users.roles' | t }}</mat-label>
-          <mat-select formControlName="role">
+          <mat-select [formField]="account.role">
             <mat-option value="AGENT">AGENT</mat-option>
             <mat-option value="MODERATOR">MODERATOR</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.reports.department' | t }}</mat-label>
-          <mat-select formControlName="departmentIds" multiple>
+          <mat-select [formField]="account.departmentIds" multiple>
             @for (dept of departments(); track dept.id) {
               <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
-        <button mat-flat-button type="submit" [disabled]="form.invalid">
+        <button mat-flat-button type="submit" [disabled]="account().invalid()">
           {{ 'common.confirm' | t }}</button>
       </form>
     </div>
@@ -93,7 +95,6 @@ import { TPipe } from '../../core/t.pipe';
 })
 export class AdminUsers {
   private readonly api = inject(ApiService);
-  private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(I18nService);
 
@@ -101,12 +102,17 @@ export class AdminUsers {
   readonly users = signal<AdminUser[]>([]);
   readonly departments = signal<Department[]>([]);
 
-  readonly form = this.fb.nonNullable.group({
-    username: ['', [Validators.required, Validators.pattern(/^[a-z0-9.\-_]{3,40}$/)]],
-    displayName: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    role: ['AGENT', Validators.required],
-    departmentIds: [[] as string[]],
+  private readonly emptyAccount = () => ({
+    username: '', displayName: '', password: '', role: 'AGENT', departmentIds: [] as string[],
+  });
+  private readonly accountModel = signal(this.emptyAccount());
+  readonly account = form(this.accountModel, (path) => {
+    required(path.username);
+    pattern(path.username, /^[a-z0-9.\-_]{3,40}$/);
+    required(path.displayName);
+    required(path.password);
+    minLength(path.password, 8);
+    required(path.role);
   });
 
   constructor() {
@@ -128,25 +134,29 @@ export class AdminUsers {
   }
 
   async create(): Promise<void> {
-    if (this.form.invalid) return;
-    const value = this.form.getRawValue();
-    try {
-      await firstValueFrom(this.api.adminCreateUser({
-        username: value.username,
-        password: value.password,
-        displayName: value.displayName,
-        roles: [value.role],
-        departmentIds: value.departmentIds,
-      }));
-      this.form.reset({
-        username: '', displayName: '', password: '', role: 'AGENT', departmentIds: [],
-      });
-      await this.reload();
-    } catch (error: unknown) {
-      const status = (error as { status?: number }).status;
-      this.snackBar.open(status === 409
-        ? this.i18n.t('admin.users.duplicate') : this.i18n.t('common.error'),
-        undefined, { duration: 5000 });
+    if (this.account().invalid()) {
+      markAllTouched(this.account);
+      return;
     }
+    await submit(this.account, async () => {
+      const value = this.accountModel();
+      try {
+        await firstValueFrom(this.api.adminCreateUser({
+          username: value.username,
+          password: value.password,
+          displayName: value.displayName,
+          roles: [value.role],
+          departmentIds: value.departmentIds,
+        }));
+        this.accountModel.set(this.emptyAccount());
+        this.account().reset();
+        await this.reload();
+      } catch (error: unknown) {
+        const status = (error as { status?: number }).status;
+        this.snackBar.open(status === 409
+          ? this.i18n.t('admin.users.duplicate') : this.i18n.t('common.error'),
+          undefined, { duration: 5000 });
+      }
+    });
   }
 }

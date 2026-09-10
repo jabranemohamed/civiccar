@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormField, form, maxLength } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,7 +25,7 @@ import { StatusChip } from '../../shared/status-chip';
  */
 @Component({
   selector: 'cc-admin-report-detail',
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule,
+  imports: [DatePipe, FormField, MatButtonModule, MatFormFieldModule, MatIconModule,
     MatInputModule, MatSelectModule, MatProgressSpinnerModule, TPipe, StatusChip],
   styles: `
     .page { display: flex; flex-direction: column; gap: 14px; max-inline-size: 1000px; }
@@ -90,7 +90,7 @@ import { StatusChip } from '../../shared/status-chip';
           <h2>{{ 'admin.report.publicDescription' | t }}</h2>
           @if (auth.isModerator()) {
             <mat-form-field appearance="outline" style="inline-size:100%">
-              <textarea matInput [formControl]="publicText" rows="3" maxlength="400"></textarea>
+              <textarea matInput [formField]="actions.publicText" rows="3"></textarea>
             </mat-form-field>
             <button mat-stroked-button (click)="savePublicText()">
               {{ 'admin.moderation.editText' | t }}</button>
@@ -136,7 +136,7 @@ import { StatusChip } from '../../shared/status-chip';
             <div class="row">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>{{ 'admin.moderation.reason' | t }}</mat-label>
-                <input matInput [formControl]="moderationReason" />
+                <input matInput [formField]="actions.moderationReason" />
               </mat-form-field>
               <button mat-flat-button id="publish-button" (click)="setPublication('PUBLISHED')">
                 {{ 'admin.moderation.publish' | t }}</button>
@@ -146,7 +146,7 @@ import { StatusChip } from '../../shared/status-chip';
             <div class="row">
               <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:340px">
                 <mat-label>{{ 'admin.report.changeCategory' | t }}</mat-label>
-                <mat-select [formControl]="newTypeId">
+                <mat-select [formField]="actions.newTypeId">
                   @for (type of catalogTypes(); track type.id) {
                     <mat-option [value]="type.id">{{ type.groupLabelFr }} — {{ type.labelFr }}</mat-option>
                   }
@@ -163,7 +163,7 @@ import { StatusChip } from '../../shared/status-chip';
           <div class="row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:260px">
               <mat-label>{{ 'admin.report.assignDepartment' | t }}</mat-label>
-              <mat-select [formControl]="departmentControl"
+              <mat-select [formField]="actions.departmentId"
                           (valueChange)="loadAgents($event)">
                 @for (dept of departments(); track dept.id) {
                   <mat-option [value]="dept.id">{{ dept.nameFr }}</mat-option>
@@ -172,7 +172,7 @@ import { StatusChip } from '../../shared/status-chip';
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:240px">
               <mat-label>{{ 'admin.report.assignAgent' | t }}</mat-label>
-              <mat-select [formControl]="assigneeControl">
+              <mat-select [formField]="actions.assigneeId">
                 <mat-option [value]="null">{{ 'admin.reports.unassigned' | t }}</mat-option>
                 @for (agent of agents(); track agent.id) {
                   <mat-option [value]="agent.id">{{ agent.displayName }}</mat-option>
@@ -190,7 +190,7 @@ import { StatusChip } from '../../shared/status-chip';
           <div class="row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:280px">
               <mat-label>{{ 'admin.reports.status' | t }}</mat-label>
-              <mat-select [formControl]="targetStatus" id="status-select">
+              <mat-select [formField]="actions.targetStatus" id="status-select">
                 @for (target of d.allowedTransitions; track target) {
                   <mat-option [value]="target">{{ 'status.' + target | t }}</mat-option>
                 }
@@ -198,7 +198,7 @@ import { StatusChip } from '../../shared/status-chip';
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" style="inline-size:280px">
               <mat-label>{{ 'admin.report.statusReason' | t }}</mat-label>
-              <input matInput [formControl]="statusReason" />
+              <input matInput [formField]="actions.statusReason" />
             </mat-form-field>
             <button mat-flat-button id="apply-status" (click)="changeStatus()">
               {{ 'common.confirm' | t }}</button>
@@ -207,8 +207,8 @@ import { StatusChip } from '../../shared/status-chip';
             <div class="row">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>{{ 'admin.report.duplicateOf' | t }}</mat-label>
-                <input matInput [formControl]="canonicalRef" />
-                @if (canonicalRef.hasError('server')) {
+                <input matInput [formField]="actions.canonicalRef" />
+                @if (duplicateError()) {
                   <mat-error>{{ 'common.error' | t }}</mat-error>
                 }
               </mat-form-field>
@@ -230,7 +230,7 @@ import { StatusChip } from '../../shared/status-chip';
           }
           <mat-form-field appearance="outline" style="inline-size:100%">
             <mat-label>{{ 'admin.report.addUpdate' | t }}</mat-label>
-            <textarea matInput [formControl]="newUpdate" rows="2" maxlength="1000"></textarea>
+            <textarea matInput [formField]="actions.newUpdate" rows="2"></textarea>
           </mat-form-field>
           <button mat-stroked-button (click)="addUpdate()">{{ 'admin.report.addUpdate' | t }}</button>
         </div>
@@ -247,7 +247,7 @@ import { StatusChip } from '../../shared/status-chip';
           }
           <mat-form-field appearance="outline" style="inline-size:100%">
             <mat-label>{{ 'admin.report.addNote' | t }}</mat-label>
-            <textarea matInput [formControl]="newNote" rows="2" maxlength="2000"></textarea>
+            <textarea matInput [formField]="actions.newNote" rows="2"></textarea>
           </mat-form-field>
           <button mat-stroked-button (click)="addNote()">{{ 'admin.report.addNote' | t }}</button>
         </div>
@@ -286,16 +286,29 @@ export class AdminReportDetailPage implements OnInit {
   readonly catalogTypes = signal<
     { id: string; code: string; groupLabelFr: string; labelFr: string }[]>([]);
 
-  readonly publicText = new FormControl('', { nonNullable: true });
-  readonly moderationReason = new FormControl('', { nonNullable: true });
-  readonly newTypeId = new FormControl<string | null>(null);
-  readonly departmentControl = new FormControl<string | null>(null);
-  readonly assigneeControl = new FormControl<string | null>(null);
-  readonly targetStatus = new FormControl<WorkflowStatus | null>(null);
-  readonly statusReason = new FormControl('', { nonNullable: true });
-  readonly canonicalRef = new FormControl('', { nonNullable: true });
-  readonly newUpdate = new FormControl('', { nonNullable: true });
-  readonly newNote = new FormControl('', { nonNullable: true });
+  /** Toutes les saisies d'action de la fiche dans un seul modèle Signal Forms. */
+  private readonly actionsModel = signal({
+    publicText: '',
+    moderationReason: '',
+    newTypeId: null as string | null,
+    departmentId: null as string | null,
+    assigneeId: null as string | null,
+    targetStatus: null as WorkflowStatus | null,
+    statusReason: '',
+    canonicalRef: '',
+    newUpdate: '',
+    newNote: '',
+  });
+  readonly actions = form(this.actionsModel, (path) => {
+    maxLength(path.publicText, 400);
+    maxLength(path.newUpdate, 1000);
+    maxLength(path.newNote, 2000);
+  });
+  readonly duplicateError = signal(false);
+
+  private patchActions(patch: Partial<ReturnType<typeof this.actionsModel>>): void {
+    this.actionsModel.update((current) => ({ ...current, ...patch }));
+  }
 
   readonly fieldValues = computed(() => Object.entries(this.detail()?.fieldValues ?? {}));
 
@@ -316,9 +329,9 @@ export class AdminReportDetailPage implements OnInit {
       this.catalogTypes.set(catalog.types);
     }
     const dept = this.detail()?.department?.id ?? null;
-    this.departmentControl.setValue(dept);
+    this.patchActions({ departmentId: dept });
     if (dept) await this.loadAgents(dept);
-    this.assigneeControl.setValue(this.detail()?.assignee?.id ?? null);
+    this.patchActions({ assigneeId: this.detail()?.assignee?.id ?? null });
   }
 
   private async reload(): Promise<void> {
@@ -326,8 +339,7 @@ export class AdminReportDetailPage implements OnInit {
     try {
       const detail = await firstValueFrom(this.api.adminReport(this.id()));
       this.detail.set(detail);
-      this.publicText.setValue(detail.descriptionPublic ?? '');
-      this.targetStatus.setValue(null);
+      this.patchActions({ publicText: detail.descriptionPublic ?? '', targetStatus: null });
     } catch {
       this.detail.set(null);
     } finally {
@@ -341,7 +353,8 @@ export class AdminReportDetailPage implements OnInit {
   }
 
   /** Exécute une mutation ; 409 -> message + rechargement sans écraser l'autre agent. */
-  private async run(action: () => Promise<unknown>, errorTarget?: FormControl): Promise<void> {
+  private async run(action: () => Promise<unknown>, markDuplicateError = false): Promise<void> {
+    this.duplicateError.set(false);
     try {
       await action();
       await this.reload();
@@ -354,8 +367,8 @@ export class AdminReportDetailPage implements OnInit {
       } else if (problem.error?.code === 'reopen.reasonRequired') {
         this.snackBar.open(this.i18n.t('admin.report.reopenReasonRequired'), undefined,
           { duration: 5000 });
-      } else if (errorTarget) {
-        errorTarget.setErrors({ server: true });
+      } else if (markDuplicateError) {
+        this.duplicateError.set(true);
       } else {
         this.snackBar.open(this.i18n.t('common.error'), undefined, { duration: 5000 });
       }
@@ -363,34 +376,38 @@ export class AdminReportDetailPage implements OnInit {
   }
 
   assign(): void {
+    const { departmentId, assigneeId } = this.actionsModel();
     void this.run(() => firstValueFrom(this.api.adminAssign(this.id(),
-      this.departmentControl.value, this.assigneeControl.value, this.detail()!.version)));
+      departmentId, assigneeId, this.detail()!.version)));
   }
 
   changeStatus(): void {
-    if (!this.targetStatus.value) return;
+    const { targetStatus, statusReason } = this.actionsModel();
+    if (!targetStatus) return;
     void this.run(() => firstValueFrom(this.api.adminChangeStatus(this.id(),
-      this.targetStatus.value!, this.statusReason.value || null, this.detail()!.version)));
+      targetStatus, statusReason || null, this.detail()!.version)));
   }
 
   setPublication(status: 'PUBLISHED' | 'HIDDEN'): void {
     void this.run(() => firstValueFrom(this.api.adminSetPublication(this.id(), status,
-      this.moderationReason.value || null)));
+      this.actionsModel().moderationReason || null)));
   }
 
   savePublicText(): void {
-    void this.run(() => firstValueFrom(this.api.adminEditPublicText(this.id(), this.publicText.value)));
+    void this.run(() => firstValueFrom(
+      this.api.adminEditPublicText(this.id(), this.actionsModel().publicText)));
   }
 
   changeCategory(): void {
-    if (!this.newTypeId.value) return;
-    void this.run(() => firstValueFrom(this.api.adminChangeCategory(this.id(), this.newTypeId.value!)));
+    const typeId = this.actionsModel().newTypeId;
+    if (!typeId) return;
+    void this.run(() => firstValueFrom(this.api.adminChangeCategory(this.id(), typeId)));
   }
 
   markDuplicate(): void {
-    if (!this.canonicalRef.value) return;
-    void this.run(() => firstValueFrom(this.api.adminMarkDuplicate(this.id(),
-      this.canonicalRef.value)), this.canonicalRef);
+    const reference = this.actionsModel().canonicalRef;
+    if (!reference) return;
+    void this.run(() => firstValueFrom(this.api.adminMarkDuplicate(this.id(), reference)), true);
   }
 
   moderateMedia(mediaId: string, approve: boolean): void {
@@ -398,18 +415,20 @@ export class AdminReportDetailPage implements OnInit {
   }
 
   addUpdate(): void {
-    if (!this.newUpdate.value.trim()) return;
+    const body = this.actionsModel().newUpdate;
+    if (!body.trim()) return;
     void this.run(async () => {
-      await firstValueFrom(this.api.adminAddPublicUpdate(this.id(), this.newUpdate.value));
-      this.newUpdate.reset();
+      await firstValueFrom(this.api.adminAddPublicUpdate(this.id(), body));
+      this.patchActions({ newUpdate: '' });
     });
   }
 
   addNote(): void {
-    if (!this.newNote.value.trim()) return;
+    const body = this.actionsModel().newNote;
+    if (!body.trim()) return;
     void this.run(async () => {
-      await firstValueFrom(this.api.adminAddNote(this.id(), this.newNote.value));
-      this.newNote.reset();
+      await firstValueFrom(this.api.adminAddNote(this.id(), body));
+      this.patchActions({ newNote: '' });
     });
   }
 }

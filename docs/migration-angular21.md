@@ -172,6 +172,18 @@ Admin (`/api/v1/admin`, rôles + scope objet) : `GET /dashboard`, `GET /reports`
   métier report.search, SQL, commit). Proxy `/api/telemetry/traces` → collector,
   exempté de CSRF (POST hors HttpClient), 204 systématique côté navigateur.
 
+- 2026-09-10 : refactorisation « tout signal » du frontend : Reactive Forms remplacés
+  par **Signal Forms** (`@angular/forms/signals`, expérimental 21) sur tous les
+  formulaires (login, contact, abonnement, assistant de dépôt, création de compte,
+  contenus, actions de la fiche dossier) ; recherche/coordonnées/champs dynamiques en
+  signaux purs ; suppression du pont `toSignal(statusChanges)` (la validité est un
+  signal natif) ; helper `markAllTouched` (l'interop Material n'affiche mat-error qu'à
+  l'état touché+invalide et `submit()` ne marque pas les champs). Vérifié en E2E
+  navigateur : dépôt 000111-2026 avec champ conditionnel requis (blocage + erreur puis
+  sélection réelle MatSelect), e-mail invalide affiché, consentement par checkbox
+  Material, publication admin avec motif. `ng build` OK (initial 748 kB brut / 187 kB
+  transférés : base forms hoistée), `ng test` 4/4.
+
 ## Limitations et vérifications non exécutées (honnêteté)
 
 - **E2E automatisés (Playwright)** : non mis en place ; les parcours ont été vérifiés

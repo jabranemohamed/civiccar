@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormField, form, required, submit } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -9,12 +9,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/auth.service';
 import { ConfigService } from '../../core/config.service';
 import { TPipe } from '../../core/t.pipe';
+import { markAllTouched } from '../../core/forms';
 
-/** Connexion des agents (sessions Spring conservées). Erreur générique en cas d'échec. */
+/**
+ * Connexion des agents (sessions Spring conservées). Erreur générique en cas d'échec.
+ * Formulaire en Signal Forms : modèle signal + directive [formField].
+ */
 @Component({
   selector: 'cc-login',
-  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule,
-    MatIconModule, TPipe],
+  imports: [FormField, MatButtonModule, MatFormFieldModule, MatInputModule, MatIconModule, TPipe],
   styles: `
     .page { min-block-size: 60vh; display: grid; place-items: center; padding: 24px 16px; }
     form { display: flex; flex-direction: column; gap: 10px; inline-size: 340px; max-inline-size: 100%; }
@@ -22,7 +25,7 @@ import { TPipe } from '../../core/t.pipe';
   `,
   template: `
     <div class="page">
-      <form class="cc-card" [formGroup]="form" (ngSubmit)="submit()">
+      <form class="cc-card" (submit)="$event.preventDefault(); connect()">
         <h1>{{ appName }}</h1>
         <p class="cc-muted" style="text-align:center">{{ 'login.staffOnly' | t }}</p>
         @if (error()) {
@@ -30,15 +33,14 @@ import { TPipe } from '../../core/t.pipe';
         }
         <mat-form-field appearance="outline">
           <mat-label>{{ 'login.username' | t }}</mat-label>
-          <input matInput formControlName="username" autocomplete="username" required
-                 name="username" />
+          <input matInput [formField]="credentials.username" autocomplete="username" />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>{{ 'login.password' | t }}</mat-label>
-          <input matInput type="password" formControlName="password"
-                 autocomplete="current-password" required name="password" />
+          <input matInput type="password" [formField]="credentials.password"
+                 autocomplete="current-password" />
         </mat-form-field>
-        <button mat-flat-button type="submit" [disabled]="pending()">
+        <button mat-flat-button type="submit" [disabled]="credentials().submitting()">
           {{ 'login.submit' | t }}
         </button>
       </form>
@@ -50,35 +52,35 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly config = inject(ConfigService);
-  private readonly fb = inject(FormBuilder);
 
   readonly error = signal(false);
-  readonly pending = signal(false);
 
-  readonly form = this.fb.nonNullable.group({
-    username: ['', Validators.required],
-    password: ['', Validators.required],
+  private readonly model = signal({ username: '', password: '' });
+  readonly credentials = form(this.model, (path) => {
+    required(path.username);
+    required(path.password);
   });
 
   get appName(): string {
     return this.config.get()?.appName ?? 'CivicCare Tunis';
   }
 
-  async submit(): Promise<void> {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+  /** submit() marque les champs touchés et ignore l'action si le formulaire est invalide. */
+  async connect(): Promise<void> {
+    this.error.set(false);
+    if (this.credentials().invalid()) {
+      markAllTouched(this.credentials);
       return;
     }
-    this.pending.set(true);
-    this.error.set(false);
-    const { username, password } = this.form.getRawValue();
-    const ok = await this.auth.login(username, password);
-    this.pending.set(false);
-    if (ok) {
-      const target = this.route.snapshot.queryParamMap.get('continue') ?? '/admin';
-      void this.router.navigateByUrl(target);
-    } else {
-      this.error.set(true);
-    }
+    await submit(this.credentials, async () => {
+      const { username, password } = this.model();
+      const ok = await this.auth.login(username, password);
+      if (ok) {
+        const target = this.route.snapshot.queryParamMap.get('continue') ?? '/admin';
+        void this.router.navigateByUrl(target);
+      } else {
+        this.error.set(true);
+      }
+    });
   }
 }

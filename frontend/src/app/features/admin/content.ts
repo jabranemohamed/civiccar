@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormField, form } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -16,7 +16,7 @@ import { TPipe } from '../../core/t.pipe';
 /** Édition des pages d'information : FR / AR / EN par onglets ; la zone AR est saisie en RTL. */
 @Component({
   selector: 'cc-admin-content',
-  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule,
+  imports: [FormField, MatButtonModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatTabsModule, TPipe],
   styles: `
     .full { inline-size: 100%; }
@@ -36,36 +36,36 @@ import { TPipe } from '../../core/t.pipe';
       </mat-form-field>
 
       @if (selected()) {
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form (submit)="$event.preventDefault(); save()">
           <mat-tab-group>
             <mat-tab label="Français">
               <mat-form-field appearance="outline" class="full">
                 <mat-label>{{ 'admin.content.title' | t }}</mat-label>
-                <input matInput formControlName="titleFr" />
+                <input matInput [formField]="page.titleFr" />
               </mat-form-field>
               <mat-form-field appearance="outline" class="full">
                 <mat-label>{{ 'admin.content.body' | t }}</mat-label>
-                <textarea matInput formControlName="bodyFr" rows="12"></textarea>
+                <textarea matInput [formField]="page.bodyFr" rows="12"></textarea>
               </mat-form-field>
             </mat-tab>
             <mat-tab label="العربية">
               <mat-form-field appearance="outline" class="full rtl">
                 <mat-label>{{ 'admin.content.title' | t }}</mat-label>
-                <input matInput formControlName="titleAr" dir="rtl" />
+                <input matInput [formField]="page.titleAr" dir="rtl" />
               </mat-form-field>
               <mat-form-field appearance="outline" class="full rtl">
                 <mat-label>{{ 'admin.content.body' | t }}</mat-label>
-                <textarea matInput formControlName="bodyAr" rows="12" dir="rtl"></textarea>
+                <textarea matInput [formField]="page.bodyAr" rows="12" dir="rtl"></textarea>
               </mat-form-field>
             </mat-tab>
             <mat-tab label="English">
               <mat-form-field appearance="outline" class="full">
                 <mat-label>{{ 'admin.content.title' | t }}</mat-label>
-                <input matInput formControlName="titleEn" />
+                <input matInput [formField]="page.titleEn" />
               </mat-form-field>
               <mat-form-field appearance="outline" class="full">
                 <mat-label>{{ 'admin.content.body' | t }}</mat-label>
-                <textarea matInput formControlName="bodyEn" rows="12"></textarea>
+                <textarea matInput [formField]="page.bodyEn" rows="12"></textarea>
               </mat-form-field>
             </mat-tab>
           </mat-tab-group>
@@ -77,17 +77,17 @@ import { TPipe } from '../../core/t.pipe';
 })
 export class AdminContent {
   private readonly api = inject(ApiService);
-  private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(I18nService);
 
   readonly pages = signal<AdminContentPage[]>([]);
   readonly selected = signal<AdminContentPage | null>(null);
 
-  readonly form = this.fb.nonNullable.group({
+  private readonly pageModel = signal({
     titleFr: '', titleAr: '', titleEn: '',
     bodyFr: '', bodyAr: '', bodyEn: '',
   });
+  readonly page = form(this.pageModel);
 
   constructor() {
     void firstValueFrom(this.api.adminContent()).then((pages) => {
@@ -100,7 +100,7 @@ export class AdminContent {
     const page = this.pages().find((p) => p.slug === slug) ?? null;
     this.selected.set(page);
     if (page) {
-      this.form.setValue({
+      this.pageModel.set({
         titleFr: page.titleFr, titleAr: page.titleAr, titleEn: page.titleEn,
         bodyFr: page.bodyFr, bodyAr: page.bodyAr, bodyEn: page.bodyEn,
       });
@@ -111,7 +111,7 @@ export class AdminContent {
     const page = this.selected();
     if (!page) return;
     try {
-      await firstValueFrom(this.api.adminUpdateContent(page.slug, this.form.getRawValue()));
+      await firstValueFrom(this.api.adminUpdateContent(page.slug, this.pageModel()));
       const pages = await firstValueFrom(this.api.adminContent());
       this.pages.set(pages);
       this.snackBar.open(this.i18n.t('common.saved'), undefined, { duration: 3000 });

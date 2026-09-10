@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal, viewChild } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormField, email as emailValidator, form, maxLength, required, requiredError, validate,
+} from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -12,7 +14,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { firstValueFrom } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 import { ApiService } from '../../core/api.service';
 import {
@@ -24,6 +25,7 @@ import { TPipe } from '../../core/t.pipe';
 import { CcMap } from '../../shared/map';
 import { businessSpan } from '../../core/telemetry';
 import { DuplicatesDialog } from './duplicates-dialog';
+import { markAllTouched } from '../../core/forms';
 
 interface PendingPhoto {
   file: File;
@@ -31,14 +33,14 @@ interface PendingPhoto {
 }
 
 /**
- * Assistant de dépôt en 4 étapes (MatStepper + Reactive Forms typés) : position
+ * Assistant de dépôt en 4 étapes (MatStepper + Signal Forms) : position
  * (adresse/GPS/repère/coordonnées), type + champs conditionnels, détails + photos,
  * contact + consentement + récapitulatif. Doublons proposés avant envoi ; clé
  * d'idempotence par assistant ; erreurs serveur converties en erreurs de champ.
  */
 @Component({
   selector: 'cc-report-form',
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatCheckboxModule, MatDialogModule,
+  imports: [FormField, RouterLink, MatButtonModule, MatCheckboxModule, MatDialogModule,
     MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatStepperModule,
     MatExpansionModule, TPipe, CcMap],
   styles: `
@@ -53,6 +55,7 @@ interface PendingPhoto {
     .photo { position: relative; }
     .photo img { inline-size: 100px; block-size: 100px; object-fit: cover; border-radius: 10px; }
     .nav { display: flex; justify-content: space-between; margin-top: 8px; }
+    .field-error { color: var(--mat-sys-error, #ba1a1a); }
     .success { text-align: center; display: flex; flex-direction: column; gap: 10px;
                align-items: center; padding: 32px; }
     .success mat-icon { font-size: 56px; inline-size: 56px; block-size: 56px; color: #14805a; }
@@ -81,7 +84,8 @@ interface PendingPhoto {
             <div class="row">
               <mat-form-field appearance="outline" style="flex:1" subscriptSizing="dynamic">
                 <mat-label>{{ 'wizard.position.search' | t }}</mat-label>
-                <input matInput [formControl]="addressSearch" id="address-search"
+                <input matInput [value]="addressSearch()"
+                       (input)="addressSearch.set($any($event.target).value)" id="address-search"
                        (keydown.enter)="$event.preventDefault(); geocode()" />
               </mat-form-field>
               <button mat-stroked-button type="button" (click)="geocode()">
@@ -111,18 +115,20 @@ interface PendingPhoto {
               <div class="row">
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
                   <mat-label>{{ 'wizard.position.lat' | t }}</mat-label>
-                  <input matInput type="number" [formControl]="latInput" step="0.00001" />
+                  <input matInput type="number" [value]="latInput() ?? ''"
+                         (input)="latInput.set(toNumber($any($event.target).value))" step="0.00001" />
                 </mat-form-field>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
                   <mat-label>{{ 'wizard.position.lon' | t }}</mat-label>
-                  <input matInput type="number" [formControl]="lonInput" step="0.00001" />
+                  <input matInput type="number" [value]="lonInput() ?? ''"
+                         (input)="lonInput.set(toNumber($any($event.target).value))" step="0.00001" />
                 </mat-form-field>
                 <button mat-stroked-button type="button" (click)="applyManual()">OK</button>
               </div>
             </mat-expansion-panel>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>{{ 'wizard.position.address' | t }}</mat-label>
-              <input matInput [formControl]="addressDetails" maxlength="300" id="address-details" />
+              <input matInput [formField]="wizard.addressDetails" id="address-details" />
             </mat-form-field>
             @if (positionError()) {
               <div class="cc-banner" role="alert">{{ positionError()! | t }}</div>
@@ -143,7 +149,8 @@ interface PendingPhoto {
             <p>{{ 'wizard.type.intro' | t }}</p>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>{{ 'wizard.type.search' | t }}</mat-label>
-              <input matInput [formControl]="typeSearch" id="type-search" />
+              <input matInput [value]="typeSearch()"
+                     (input)="typeSearch.set($any($event.target).value)" id="type-search" />
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
             <div class="types">
@@ -188,9 +195,9 @@ interface PendingPhoto {
             @if (selectedType()?.standardDescription) {
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'wizard.details.description' | t: descriptionMax }}</mat-label>
-                <textarea matInput [formControl]="description" rows="4" id="description-field"
-                          [maxlength]="descriptionMax" required></textarea>
-                <mat-hint align="end">{{ description.value.length }}/{{ descriptionMax }}</mat-hint>
+                <textarea matInput [formField]="wizard.description" rows="4"
+                          id="description-field"></textarea>
+                <mat-hint align="end">{{ wizardModel().description.length }}/{{ descriptionMax }}</mat-hint>
                 <mat-error>{{ 'wizard.details.description.required' | t: descriptionMax }}</mat-error>
               </mat-form-field>
             }
@@ -198,21 +205,28 @@ interface PendingPhoto {
               @if (field.kind === 'SELECT') {
                 <mat-form-field appearance="outline" style="max-inline-size:420px">
                   <mat-label>{{ i18n.label(field.labels) }}</mat-label>
-                  <mat-select [formControl]="fieldControl(field.code)" [required]="field.required"
+                  <mat-select [value]="fieldValue(field.code)"
+                              (valueChange)="setField(field.code, $event)"
+                              [required]="field.required"
                               [attr.data-field-code]="field.code">
                     @for (option of field.options; track option.code) {
                       <mat-option [value]="option.code">{{ i18n.label(option.labels) }}</mat-option>
                     }
                   </mat-select>
-                  <mat-error>{{ 'wizard.field.required' | t }}</mat-error>
+                  @if (missingFields().has(field.code)) {
+                    <mat-hint class="field-error">{{ 'wizard.field.required' | t }}</mat-hint>
+                  }
                 </mat-form-field>
               } @else {
                 <mat-form-field appearance="outline" style="max-inline-size:420px">
                   <mat-label>{{ i18n.label(field.labels) }}</mat-label>
-                  <input matInput [formControl]="fieldControl(field.code)"
-                         [maxlength]="field.maxLen" [required]="field.required"
+                  <input matInput [value]="fieldValue(field.code)"
+                         (input)="setField(field.code, $any($event.target).value)"
+                         [attr.maxlength]="field.maxLen" [required]="field.required"
                          [attr.data-field-code]="field.code" />
-                  <mat-error>{{ 'wizard.field.required' | t }}</mat-error>
+                  @if (missingFields().has(field.code)) {
+                    <mat-hint class="field-error">{{ 'wizard.field.required' | t }}</mat-hint>
+                  }
                 </mat-form-field>
               }
             }
@@ -254,18 +268,18 @@ interface PendingPhoto {
             <p>{{ 'wizard.contact.intro' | t }}</p>
             <mat-form-field appearance="outline" style="max-inline-size:420px">
               <mat-label>{{ 'wizard.contact.email' | t }}</mat-label>
-              <input matInput type="email" [formControl]="email" id="contact-email" required />
+              <input matInput type="email" [formField]="wizard.email" id="contact-email" />
               <mat-error>{{ 'wizard.contact.email.invalid' | t }}</mat-error>
             </mat-form-field>
             <mat-form-field appearance="outline" style="max-inline-size:420px">
               <mat-label>{{ 'wizard.contact.phone' | t }}</mat-label>
-              <input matInput [formControl]="phone" id="contact-phone" dir="ltr" />
+              <input matInput [formField]="wizard.phone" id="contact-phone" dir="ltr" />
               <mat-hint>+216 …</mat-hint>
-              @if (phone.hasError('server')) {
-                <mat-error>{{ 'wizard.contact.phone.invalid' | t }}</mat-error>
+              @if (phoneServerError()) {
+                <mat-hint class="field-error">{{ 'wizard.contact.phone.invalid' | t }}</mat-hint>
               }
             </mat-form-field>
-            <mat-checkbox [formControl]="consent" id="consent-checkbox">
+            <mat-checkbox [formField]="wizard.consent" id="consent-checkbox">
               {{ 'wizard.consent' | t }}
             </mat-checkbox>
             <h3>{{ 'wizard.summary.title' | t }}</h3>
@@ -276,7 +290,7 @@ interface PendingPhoto {
                 {{ address() || '' }}
                 <span class="cc-bidi">{{ lat()?.toFixed(5) }}, {{ lon()?.toFixed(5) }}</span></div>
               @if (selectedType()?.standardDescription) {
-                <div>{{ 'detail.description' | t }} : {{ description.value }}</div>
+                <div>{{ 'detail.description' | t }} : {{ wizardModel().description }}</div>
               }
               <div>{{ 'wizard.details.photos' | t: maxPhotos }} : {{ photos().length }}</div>
               <button mat-button type="button" (click)="stepper.selectedIndex = 0">
@@ -302,7 +316,6 @@ export class ReportForm {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly fb = inject(FormBuilder);
   readonly i18n = inject(I18nService);
   readonly config = inject(ConfigService);
 
@@ -325,17 +338,28 @@ export class ReportForm {
   private duplicatesConfirmed = false;
 
   readonly groups = signal<CatalogGroup[]>([]);
-  readonly typeSearch = new FormControl('', { nonNullable: true });
-  readonly addressSearch = new FormControl('', { nonNullable: true });
-  readonly addressDetails = new FormControl('', { nonNullable: true });
-  readonly latInput = new FormControl<number | null>(null);
-  readonly lonInput = new FormControl<number | null>(null);
-  readonly description = new FormControl('', { nonNullable: true, validators: [Validators.required] });
-  readonly email = new FormControl('', { nonNullable: true,
-    validators: [Validators.required, Validators.email] });
-  readonly phone = new FormControl('', { nonNullable: true });
-  readonly consent = new FormControl(false, { nonNullable: true });
-  private readonly fieldControls = new Map<string, FormControl<string>>();
+  readonly typeSearch = signal('');
+  readonly addressSearch = signal('');
+  readonly latInput = signal<number | null>(null);
+  readonly lonInput = signal<number | null>(null);
+  readonly phoneServerError = signal(false);
+
+  /** Champs saisis validés : Signal Forms (la règle description dépend du type choisi). */
+  readonly wizardModel = signal({
+    addressDetails: '', description: '', email: '', phone: '', consent: false,
+  });
+  readonly wizard = form(this.wizardModel, (path) => {
+    maxLength(path.addressDetails, 300);
+    // Requise uniquement quand le type retient la description standard (règle réactive)
+    validate(path.description, ({ value }) =>
+      this.selectedType()?.standardDescription && !value().trim() ? requiredError() : null);
+    required(path.email);
+    emailValidator(path.email);
+  });
+
+  /** Valeurs des champs conditionnels du type (dynamiques, hors schéma statique). */
+  readonly fieldValues = signal<Record<string, string>>({});
+  readonly missingFields = signal<ReadonlySet<string>>(new Set());
 
   readonly filteredGroups = computed(() => {
     const query = this.normalizedQuery();
@@ -350,15 +374,17 @@ export class ReportForm {
       .filter((group) => group.types.length > 0);
   });
 
-  private readonly searchQuery = signal('');
   readonly positionValid = computed(() => this.lon() !== null && this.lat() !== null);
-  // La validité d'un FormControl n'est pas un signal : sans passage par statusChanges,
-  // ce computed resterait figé en zoneless sur l'état capté à la sélection du type.
-  private readonly descriptionStatus = toSignal(this.description.statusChanges, {
-    initialValue: this.description.status,
-  });
+  // Avec Signal Forms, la validité EST un signal : plus besoin du pont statusChanges.
   readonly detailsValid = computed(() =>
-    !this.selectedType()?.standardDescription || this.descriptionStatus() === 'VALID');
+    this.wizard.description().valid() && this.missingRequiredFields().length === 0);
+
+  private readonly missingRequiredFields = computed(() => {
+    const values = this.fieldValues();
+    return (this.selectedType()?.fields ?? [])
+      .filter((field) => field.required && !(values[field.code] ?? '').trim())
+      .map((field) => field.code);
+  });
 
   get descriptionMax(): number { return this.config.get()?.limits.descriptionMax ?? 300; }
   get maxPhotos(): number { return this.config.get()?.limits.maxPhotos ?? 3; }
@@ -368,7 +394,23 @@ export class ReportForm {
 
   constructor() {
     this.api.catalog().subscribe((groups) => this.groups.set(groups));
-    this.typeSearch.valueChanges.subscribe((value) => this.searchQuery.set(value));
+  }
+
+  toNumber(raw: string): number | null {
+    const value = Number(raw);
+    return raw.trim() === '' || Number.isNaN(value) ? null : value;
+  }
+
+  fieldValue(code: string): string {
+    return this.fieldValues()[code] ?? '';
+  }
+
+  setField(code: string, value: string): void {
+    this.fieldValues.update((values) => ({ ...values, [code]: value }));
+    this.missingFields.update((missing) => {
+      if (!missing.has(code)) return missing;
+      const next = new Set(missing); next.delete(code); return next;
+    });
   }
 
   private normalize(value: string): string {
@@ -376,27 +418,14 @@ export class ReportForm {
   }
 
   private normalizedQuery(): string {
-    return this.normalize(this.searchQuery());
-  }
-
-  fieldControl(code: string): FormControl<string> {
-    let control = this.fieldControls.get(code);
-    if (!control) {
-      const field = this.selectedType()?.fields.find((f) => f.code === code);
-      control = new FormControl('', {
-        nonNullable: true,
-        validators: field?.required ? [Validators.required] : [],
-      });
-      this.fieldControls.set(code, control);
-    }
-    return control;
+    return this.normalize(this.typeSearch());
   }
 
   // ===== Étape 1 =====
 
   async geocode(): Promise<void> {
     this.geoEmpty.set(false);
-    const query = this.addressSearch.value.trim();
+    const query = this.addressSearch().trim();
     if (!query) return;
     const results = await firstValueFrom(this.api.geocode(query, this.i18n.locale()));
     this.geoResults.set(results);
@@ -405,7 +434,7 @@ export class ReportForm {
 
   pickGeo(result: GeocodeResult): void {
     this.address.set(result.label);
-    this.addressSearch.setValue(result.label);
+    this.addressSearch.set(result.label);
     this.geoResults.set([]);
     this.setPosition(result.lon, result.lat, true);
   }
@@ -428,16 +457,18 @@ export class ReportForm {
   }
 
   applyManual(): void {
-    if (this.latInput.value !== null && this.lonInput.value !== null) {
-      this.setPosition(this.lonInput.value, this.latInput.value, true);
+    const lat = this.latInput();
+    const lon = this.lonInput();
+    if (lat !== null && lon !== null) {
+      void this.setPosition(lon, lat, true);
     }
   }
 
   private async setPosition(lon: number, lat: number, fly: boolean): Promise<void> {
     this.lon.set(lon);
     this.lat.set(lat);
-    this.latInput.setValue(Number(lat.toFixed(6)));
-    this.lonInput.setValue(Number(lon.toFixed(6)));
+    this.latInput.set(Number(lat.toFixed(6)));
+    this.lonInput.set(Number(lon.toFixed(6)));
     this.pickerMap().setPickedPoint(lon, lat);
     if (fly) this.pickerMap().flyTo(lon, lat);
     this.positionError.set(null);
@@ -451,7 +482,7 @@ export class ReportForm {
       const reverse = await firstValueFrom(this.api.reverseGeocode(lon, lat, this.i18n.locale()));
       if (reverse?.label) {
         this.address.set(reverse.label);
-        this.addressSearch.setValue(reverse.label);
+        this.addressSearch.set(reverse.label);
       }
     }
   }
@@ -472,7 +503,8 @@ export class ReportForm {
   selectType(type: ServiceTypeDto): void {
     this.selectedType.set(type);
     this.typeError.set(false);
-    this.fieldControls.clear();
+    this.fieldValues.set({});
+    this.missingFields.set(new Set());
   }
 
   nextFromType(): void {
@@ -508,16 +540,14 @@ export class ReportForm {
   }
 
   nextFromDetails(): void {
-    if (this.selectedType()?.standardDescription && this.description.invalid) {
-      this.description.markAsTouched();
+    if (!this.wizard.description().valid()) {
+      this.wizard.description().markAsTouched();
       return;
     }
-    for (const field of this.selectedType()?.fields ?? []) {
-      const control = this.fieldControl(field.code);
-      if (control.invalid) {
-        control.markAsTouched();
-        return;
-      }
+    const missing = this.missingRequiredFields();
+    if (missing.length > 0) {
+      this.missingFields.set(new Set(missing));
+      return;
     }
     this.stepperRef().next();
   }
@@ -525,11 +555,12 @@ export class ReportForm {
   // ===== Soumission =====
 
   async submit(): Promise<void> {
-    if (this.email.invalid) {
-      this.email.markAsTouched();
+    this.phoneServerError.set(false);
+    if (this.wizard.email().invalid()) {
+      markAllTouched(this.wizard);
       return;
     }
-    if (!this.consent.value) {
+    if (!this.wizardModel().consent) {
       this.snackBar.open(this.i18n.t('wizard.consent.required'), undefined, { duration: 4000 });
       return;
     }
@@ -554,9 +585,10 @@ export class ReportForm {
   private async doSubmit(): Promise<void> {
     this.submitting.set(true);
     const fieldValues: Record<string, string> = {};
-    this.fieldControls.forEach((control, code) => {
-      if (control.value) fieldValues[code] = control.value;
-    });
+    for (const [code, value] of Object.entries(this.fieldValues())) {
+      if (value) fieldValues[code] = value;
+    }
+    const contact = this.wizardModel();
     try {
       const created = await businessSpan('report.submit', () => firstValueFrom(
         this.api.createReport({
@@ -564,11 +596,11 @@ export class ReportForm {
           longitude: this.lon()!,
           latitude: this.lat()!,
           address: this.address(),
-          addressDetails: this.addressDetails.value || null,
-          description: this.selectedType()!.standardDescription ? this.description.value : null,
+          addressDetails: contact.addressDetails || null,
+          description: this.selectedType()!.standardDescription ? contact.description : null,
           fieldValues,
-          email: this.email.value,
-          phone: this.phone.value || null,
+          email: contact.email,
+          phone: contact.phone || null,
           consent: true,
           idempotencyKey: this.idempotencyKey,
         }, this.photos().map((p) => p.file)),
@@ -588,13 +620,13 @@ export class ReportForm {
     const code = problem?.code ?? '';
     const fieldErrors = problem?.errors ?? {};
     if (fieldErrors['phone'] || code === 'phone.invalid') {
-      this.phone.setErrors({ server: true });
+      this.phoneServerError.set(true);
       this.stepperRef().selectedIndex = 3;
     } else if (fieldErrors['position'] || code === 'position.outside') {
       this.positionError.set('wizard.position.outside');
       this.stepperRef().selectedIndex = 0;
     } else if (fieldErrors['description'] || code === 'description.invalid') {
-      this.description.setErrors({ required: true });
+      this.wizard.description().markAsTouched();
       this.stepperRef().selectedIndex = 2;
     } else if (code.startsWith('media.')) {
       this.snackBar.open(this.i18n.t('wizard.details.photos.invalid'), undefined, { duration: 6000 });

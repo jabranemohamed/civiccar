@@ -1,6 +1,6 @@
 import { Component, effect, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormField, email as emailValidator, form, required, submit } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,12 +15,13 @@ import { ApiService } from '../../core/api.service';
 import { ReportDetail } from '../../core/api.types';
 import { I18nService } from '../../core/i18n.service';
 import { TPipe } from '../../core/t.pipe';
+import { markAllTouched } from '../../core/forms';
 import { StatusChip } from '../../shared/status-chip';
 
 /** Fiche publique : un dossier non publié répond comme un dossier inexistant. */
 @Component({
   selector: 'cc-report-detail',
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule,
+  imports: [DatePipe, FormField, MatButtonModule, MatCheckboxModule, MatFormFieldModule,
     MatIconModule, MatInputModule, MatProgressSpinnerModule, RouterLink, TPipe, StatusChip],
   styles: `
     .page { max-inline-size: 860px; margin: 0 auto; padding: 20px 16px; display: flex;
@@ -105,12 +106,10 @@ import { StatusChip } from '../../shared/status-chip';
           <h2>{{ 'detail.subscribe.title' | t }}</h2>
           <mat-form-field appearance="outline">
             <mat-label>{{ 'detail.subscribe.email' | t }}</mat-label>
-            <input matInput type="email" [formControl]="email" id="subscribe-email" />
-            @if (email.hasError('email') || email.hasError('required')) {
-              <mat-error>{{ 'wizard.contact.email.invalid' | t }}</mat-error>
-            }
+            <input matInput type="email" [formField]="subscription.email" id="subscribe-email" />
+            <mat-error>{{ 'wizard.contact.email.invalid' | t }}</mat-error>
           </mat-form-field>
-          <mat-checkbox [formControl]="consent">{{ 'detail.subscribe.consent' | t }}</mat-checkbox>
+          <mat-checkbox [formField]="subscription.consent">{{ 'detail.subscribe.consent' | t }}</mat-checkbox>
           <button mat-flat-button id="subscribe-button" (click)="subscribe()">
             <mat-icon>mail</mat-icon> {{ 'detail.subscribe.submit' | t }}
           </button>
@@ -131,9 +130,11 @@ export class ReportDetailPage {
   readonly loading = signal(true);
   readonly followed = signal(false);
 
-  readonly email = new FormControl('', { nonNullable: true,
-    validators: [Validators.required, Validators.email] });
-  readonly consent = new FormControl(false, { nonNullable: true });
+  private readonly subscriptionModel = signal({ email: '', consent: false });
+  readonly subscription = form(this.subscriptionModel, (path) => {
+    required(path.email);
+    emailValidator(path.email);
+  });
 
   constructor() {
     // Rechargement sur changement de référence OU de langue (libellés localisés serveur)
@@ -174,18 +175,22 @@ export class ReportDetailPage {
 
   async subscribe(): Promise<void> {
     const detail = this.detail();
-    if (!detail || this.email.invalid) {
-      this.email.markAsTouched();
+    if (!detail) return;
+    if (this.subscription().invalid()) {
+      markAllTouched(this.subscription);
       return;
     }
-    if (!this.consent.value) {
+    if (!this.subscriptionModel().consent) {
       this.snackBar.open(this.i18n.t('wizard.consent.required'), undefined, { duration: 4000 });
       return;
     }
-    await firstValueFrom(this.api.subscribe(detail.id, detail.reference, this.email.value));
-    // Message identique quel que soit l'état réel : pas de divulgation d'abonnement
-    this.snackBar.open(this.i18n.t('detail.subscribe.sent'), undefined, { duration: 6000 });
-    this.email.reset();
-    this.consent.reset();
+    await submit(this.subscription, async () => {
+      await firstValueFrom(this.api.subscribe(detail.id, detail.reference,
+        this.subscriptionModel().email));
+      // Message identique quel que soit l'état réel : pas de divulgation d'abonnement
+      this.snackBar.open(this.i18n.t('detail.subscribe.sent'), undefined, { duration: 6000 });
+      this.subscriptionModel.set({ email: '', consent: false });
+      this.subscription().reset();
+    });
   }
 }

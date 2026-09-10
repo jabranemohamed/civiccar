@@ -2,7 +2,6 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -12,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, debounceTime, distinctUntilChanged, startWith, switchMap } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 import { ApiService } from '../../core/api.service';
 import { CatalogGroup, MapPoint, ReportSummary, SearchFilters, WorkflowStatus } from '../../core/api.types';
@@ -31,7 +31,7 @@ type Period = 'any' | 'today' | 'week' | 'month';
  */
 @Component({
   selector: 'cc-explore',
-  imports: [ReactiveFormsModule, DatePipe, MatFormFieldModule, MatInputModule, MatSelectModule,
+  imports: [DatePipe, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatCheckboxModule, MatButtonModule, MatIconModule, MatPaginatorModule,
     MatProgressSpinnerModule, TPipe, CcMap, StatusChip],
   styles: `
@@ -78,7 +78,8 @@ type Period = 'any' | 'today' | 'week' | 'month';
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'common.search' | t }}</mat-label>
-          <input matInput [formControl]="text" [placeholder]="'home.search.placeholder' | t"
+          <input matInput [value]="text()" (input)="text.set($any($event.target).value)"
+                 [placeholder]="'home.search.placeholder' | t"
                  id="explore-search" />
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
@@ -174,7 +175,7 @@ export class Explore {
   readonly statuses: WorkflowStatus[] = ['OPEN', 'IN_PROGRESS', 'DONE_OR_ORDERED', 'OUT_OF_SCOPE'];
   readonly pageSize = PAGE_SIZE;
 
-  readonly text = new FormControl('', { nonNullable: true });
+  readonly text = signal('');
   readonly groupId = signal<string | null>(null);
   readonly status = signal<WorkflowStatus | null>(null);
   readonly period = signal<Period>('any');
@@ -197,7 +198,7 @@ export class Explore {
     this.api.catalog().pipe(takeUntilDestroyed()).subscribe((groups) => this.groups.set(groups));
 
     // Recherche texte débouncée ; switchMap ignore les réponses obsolètes
-    this.text.valueChanges.pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed())
+    toObservable(this.text).pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed())
       .subscribe(() => this.reload());
 
     this.listTrigger.pipe(
@@ -245,7 +246,7 @@ export class Explore {
       from = new Date(start.getTime() - offsetMs).toISOString();
     }
     return {
-      text: this.text.value || undefined,
+      text: this.text() || undefined,
       groupId: this.groupId() ?? undefined,
       status: this.status() ?? undefined,
       from,
@@ -264,7 +265,7 @@ export class Explore {
   }
 
   resetFilters(): void {
-    this.text.setValue('');
+    this.text.set('');
     this.groupId.set(null);
     this.status.set(null);
     this.period.set('any');
